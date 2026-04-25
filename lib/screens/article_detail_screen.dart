@@ -1,16 +1,73 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
+import '../models/article.dart';
+import '../services/article_service.dart';
 
-class ArticleDetailScreen extends StatelessWidget {
-  const ArticleDetailScreen({super.key});
+class ArticleDetailScreen extends StatefulWidget {
+  final int? articleId;
+
+  const ArticleDetailScreen({super.key, this.articleId});
+
+  @override
+  State<ArticleDetailScreen> createState() => _ArticleDetailScreenState();
+}
+
+class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
+  Article? _article;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.articleId != null) {
+      _loadArticle();
+    } else {
+      _isLoading = false;
+    }
+  }
+
+  Future<void> _loadArticle() async {
+    final result = await ArticleService.getArticleDetail(widget.articleId!);
+
+    if (!mounted) return;
+
+    setState(() {
+      if (result['success'] == true) {
+        _article = result['article'] as Article;
+      }
+      _isLoading = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: AppTheme.primaryColor),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ),
+        body: const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor)),
+      );
+    }
+
+    final title = _article?.title ?? 'Pentingnya Nutrisi Seimbang Selama Pengobatan';
+    final category = _article?.category.toUpperCase() ?? 'NUTRITION';
+    final content = _article?.content ??
+        'Pengobatan tuberkulosis (TBC) adalah perjalanan yang panjang dan seringkali menantang. Selain mengonsumsi obat secara teratur, asupan nutrisi memegang peranan vital dalam proses penyembuhan. Tubuh yang sedang melawan infeksi membutuhkan lebih banyak kalori dan nutrisi spesifik untuk memperbaiki jaringan yang rusak dan memperkuat sistem kekebalan tubuh.';
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        leading: const Icon(Icons.arrow_back, color: AppTheme.primaryColor),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: AppTheme.primaryColor),
+          onPressed: () => Navigator.pop(context),
+        ),
         title: const Text(
           'Aura Health',
           style: TextStyle(
@@ -31,10 +88,19 @@ class ArticleDetailScreen extends StatelessWidget {
           children: [
             Container(
               height: 200,
+              width: double.infinity,
               color: Colors.grey.shade300,
-              child: const Center(
-                child: Icon(Icons.image, size: 64, color: Colors.grey),
-              ),
+              child: _article?.imageUrl != null
+                  ? Image.network(
+                      _article!.imageUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const Center(
+                        child: Icon(Icons.image, size: 64, color: Colors.grey),
+                      ),
+                    )
+                  : const Center(
+                      child: Icon(Icons.image, size: 64, color: Colors.grey),
+                    ),
             ),
             Padding(
               padding: const EdgeInsets.all(16.0),
@@ -52,9 +118,9 @@ class ArticleDetailScreen extends StatelessWidget {
                           color: AppTheme.primaryLight,
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Text(
-                          'NUTRITION',
-                          style: TextStyle(
+                        child: Text(
+                          category,
+                          style: const TextStyle(
                             color: AppTheme.primaryColor,
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
@@ -70,81 +136,27 @@ class ArticleDetailScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Pentingnya Nutrisi Seimbang Selama Pengobatan',
+                    title,
                     style: Theme.of(
                       context,
                     ).textTheme.titleLarge?.copyWith(fontSize: 24),
                   ),
                   const SizedBox(height: 16),
-                  const Text(
-                    'Menjalani pengobatan TBC membutuhkan energi ekstra. Pelajari bagaimana makanan yang tepat dapat mempercepat proses penyembuhan Anda.',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Pengobatan tuberkulosis (TBC) adalah perjalanan yang panjang dan seringkali menantang. Selain mengonsumsi obat secara teratur, asupan nutrisi memegang peranan vital dalam proses penyembuhan. Tubuh yang sedang melawan infeksi membutuhkan lebih banyak kalori dan nutrisi spesifik untuk memperbaiki jaringan yang rusak dan memperkuat sistem kekebalan tubuh.',
-                  ),
-                  const SizedBox(height: 24),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border(
-                        left: BorderSide(
-                          color: AppTheme.primaryColor,
-                          width: 4,
-                        ),
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        Text(
-                          'Fakta Kunci',
-                          style: TextStyle(
-                            color: AppTheme.primaryColor,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          'Malnutrisi dapat menurunkan efektivitas obat TBC dan memperpanjang masa pemulihan. Berat badan yang ideal sangat penting untuk dipertahankan selama masa pengobatan.',
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
                   Text(
-                    'Makronutrien Utama',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.titleLarge?.copyWith(fontSize: 20),
+                    content,
+                    style: const TextStyle(fontSize: 15, height: 1.6),
                   ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Untuk membangun kembali kekuatan, pasien TBC disarankan untuk fokus pada makronutrien berikut:',
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    '• Protein Tinggi: Penting untuk perbaikan sel dan produksi antibodi.',
-                  ),
-                  const Text(
-                    '• Karbohidrat Kompleks: Memberikan energi berkelanjutan.',
-                  ),
-                  const Text('• Lemak Sehat: Membantu penyerapan vitamin.'),
                   const SizedBox(height: 24),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
+                    children: const [
+                      Icon(
                         Icons.thumb_up_alt_outlined,
                         color: Colors.grey,
                       ),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'Membantu (24)',
+                      SizedBox(width: 8),
+                      Text(
+                        'Membantu',
                         style: TextStyle(color: Colors.grey),
                       ),
                     ],

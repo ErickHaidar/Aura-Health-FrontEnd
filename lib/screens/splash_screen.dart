@@ -1,6 +1,7 @@
 ﻿import 'package:flutter/material.dart';
 import 'dart:async';
 import '../theme.dart';
+import '../services/auth_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -13,9 +14,24 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    Timer(const Duration(seconds: 3), () {
+    _checkAuthAndNavigate();
+  }
+
+  Future<void> _checkAuthAndNavigate() async {
+    // Tunggu minimal 2 detik agar splash screen terlihat
+    await Future.delayed(const Duration(seconds: 2));
+
+    if (!mounted) return;
+
+    final isLoggedIn = await AuthService.isLoggedIn();
+
+    if (!mounted) return;
+
+    if (isLoggedIn) {
+      Navigator.pushReplacementNamed(context, '/main');
+    } else {
       Navigator.pushReplacementNamed(context, '/login');
-    });
+    }
   }
 
   @override
@@ -51,6 +67,11 @@ class _SplashScreenState extends State<SplashScreen> {
               style: Theme.of(
                 context,
               ).textTheme.bodyLarge?.copyWith(color: AppTheme.textDark),
+            ),
+            const SizedBox(height: 32),
+            const CircularProgressIndicator(
+              color: AppTheme.primaryColor,
+              strokeWidth: 2,
             ),
           ],
         ),

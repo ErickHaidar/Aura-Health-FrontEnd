@@ -1,8 +1,104 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
+import '../services/chat_service.dart';
 
-class ChatbotScreen extends StatelessWidget {
+class ChatbotScreen extends StatefulWidget {
   const ChatbotScreen({super.key});
+
+  @override
+  State<ChatbotScreen> createState() => _ChatbotScreenState();
+}
+
+class _ChatbotScreenState extends State<ChatbotScreen> {
+  final _messageController = TextEditingController();
+  final _scrollController = ScrollController();
+  final List<Map<String, String>> _messages = [];
+  bool _isSending = false;
+  bool _isLoadingHistory = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadHistory();
+  }
+
+  Future<void> _loadHistory() async {
+    final result = await ChatService.getHistory(limit: 50);
+
+    if (!mounted) return;
+
+    setState(() {
+      if (result['success'] == true) {
+        final messages = result['messages'] as List;
+        for (final msg in messages) {
+          _messages.add({'role': 'user', 'text': msg.message});
+          if (msg.response != null) {
+            _messages.add({'role': 'bot', 'text': msg.response!});
+          }
+        }
+      }
+      // Tambah pesan sambutan jika kosong
+      if (_messages.isEmpty) {
+        _messages.add({
+          'role': 'bot',
+          'text': 'Halo! Saya Aura AI Assistant. Ada yang bisa saya bantu tentang kesehatan Anda hari ini?',
+        });
+      }
+      _isLoadingHistory = false;
+    });
+
+    _scrollToBottom();
+  }
+
+  Future<void> _sendMessage(String text) async {
+    if (text.trim().isEmpty) return;
+
+    setState(() {
+      _messages.add({'role': 'user', 'text': text.trim()});
+      _isSending = true;
+    });
+    _messageController.clear();
+    _scrollToBottom();
+
+    final result = await ChatService.sendMessage(text.trim());
+
+    if (!mounted) return;
+
+    setState(() {
+      if (result['success'] == true) {
+        _messages.add({
+          'role': 'bot',
+          'text': result['message'] ?? 'Maaf, saya tidak bisa menjawab saat ini.',
+        });
+      } else {
+        _messages.add({
+          'role': 'bot',
+          'text': result['message'] ?? 'Terjadi kesalahan. Coba lagi nanti.',
+        });
+      }
+      _isSending = false;
+    });
+    _scrollToBottom();
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _messageController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -10,7 +106,10 @@ class ChatbotScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        leading: const Icon(Icons.arrow_back, color: Colors.black),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Navigator.pop(context),
+        ),
         title: Column(
           children: const [
             Text(
@@ -33,50 +132,61 @@ class ChatbotScreen extends StatelessWidget {
             ),
           ],
         ),
-        actions: const [
-          Padding(
-            padding: EdgeInsets.only(right: 16.0),
-            child: CircleAvatar(
-              backgroundColor: AppTheme.primaryColor,
-              child: Icon(Icons.person, color: Colors.white, size: 20),
-            ),
+        actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert, color: Colors.grey),
+            onSelected: (value) async {
+              if (value == 'clear') {
+                final result = await ChatService.clearHistory();
+                if (!mounted) return;
+                if (result['success'] == true) {
+                  setState(() {
+                    _messages.clear();
+                    _messages.add({
+                      'role': 'bot',
+                      'text': 'Halo! Saya Aura AI Assistant. Ada yang bisa saya bantu tentang kesehatan Anda hari ini?',
+                    });
+                  });
+                }
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'clear',
+                child: Text('Hapus Riwayat'),
+              ),
+            ],
           ),
         ],
       ),
       body: Column(
         children: [
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                Center(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade200,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Text(
-                      'Today, 10:42 AM',
-                      style: TextStyle(color: Colors.grey, fontSize: 12),
-                    ),
+            child: _isLoadingHistory
+                ? const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor))
+                : ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.all(16),
+                    itemCount: _messages.length + (_isSending ? 1 : 0),
+                    itemBuilder: (context, index) {
+                      if (index == _messages.length) {
+                        // Typing indicator
+                        return _buildBotMessage('...');
+                      }
+                      final msg = _messages[index];
+                      if (msg['role'] == 'user') {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: _buildUserMessage(msg['text']!),
+                        );
+                      } else {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: _buildBotMessage(msg['text']!),
+                        );
+                      }
+                    },
                   ),
-                ),
-                const SizedBox(height: 16),
-                _buildBotMessage(
-                  'Halo! Saya Aura AI Assistant. Ada yang bisa saya bantu tentang kesehatan Anda hari ini?',
-                ),
-                const SizedBox(height: 16),
-                _buildUserMessage('Apa saja gejala TBC?'),
-                const SizedBox(height: 16),
-                _buildBotMessage(
-                  'Gejala umum Tuberculosis (TBC) yang perlu diwaspadai meliputi:\n\n• Batuk yang berlangsung lebih dari 2 minggu (bisa disertai darah)\n• Sesak napas dan nyeri di area dada\n• Berkeringat di malam hari tanpa aktivitas fisik\n• Penurunan berat badan dan nafsu makan yang drastis',
-                ),
-              ],
-            ),
           ),
           Container(
             padding: const EdgeInsets.all(16),
@@ -98,7 +208,7 @@ class ChatbotScreen extends StatelessWidget {
                     children: [
                       _buildChip('Cara Pencegahan'),
                       const SizedBox(width: 8),
-                      _buildChip('Lokasi RS'),
+                      _buildChip('Gejala TBC'),
                       const SizedBox(width: 8),
                       _buildChip('Obat TBC'),
                     ],
@@ -109,9 +219,9 @@ class ChatbotScreen extends StatelessWidget {
                   children: [
                     Expanded(
                       child: TextField(
+                        controller: _messageController,
                         decoration: InputDecoration(
                           hintText: 'Ketik pesan Anda...',
-                          prefixIcon: const Icon(Icons.attach_file),
                           filled: true,
                           fillColor: Colors.grey.shade100,
                           border: OutlineInputBorder(
@@ -123,13 +233,21 @@ class ChatbotScreen extends StatelessWidget {
                             vertical: 12,
                           ),
                         ),
+                        onSubmitted: _isSending ? null : _sendMessage,
                       ),
                     ),
                     const SizedBox(width: 12),
-                    CircleAvatar(
-                      backgroundColor: AppTheme.primaryColor,
-                      radius: 24,
-                      child: const Icon(Icons.send, color: Colors.white),
+                    GestureDetector(
+                      onTap: _isSending
+                          ? null
+                          : () => _sendMessage(_messageController.text),
+                      child: CircleAvatar(
+                        backgroundColor: _isSending
+                            ? Colors.grey
+                            : AppTheme.primaryColor,
+                        radius: 24,
+                        child: const Icon(Icons.send, color: Colors.white),
+                      ),
                     ),
                   ],
                 ),
@@ -145,9 +263,9 @@ class ChatbotScreen extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        CircleAvatar(
+        const CircleAvatar(
           backgroundColor: AppTheme.primaryColor,
-          child: const Icon(Icons.smart_toy, color: Colors.white, size: 20),
+          child: Icon(Icons.smart_toy, color: Colors.white, size: 20),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -161,7 +279,7 @@ class ChatbotScreen extends StatelessWidget {
             child: Text(text),
           ),
         ),
-        const SizedBox(width: 48), // Padding on right
+        const SizedBox(width: 48),
       ],
     );
   }
@@ -171,7 +289,7 @@ class ChatbotScreen extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
-        const SizedBox(width: 48), // Padding on left
+        const SizedBox(width: 48),
         Expanded(
           child: Container(
             padding: const EdgeInsets.all(16),
@@ -192,14 +310,17 @@ class ChatbotScreen extends StatelessWidget {
   }
 
   Widget _buildChip(String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade300),
+    return GestureDetector(
+      onTap: _isSending ? null : () => _sendMessage(label),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.grey.shade300),
+        ),
+        child: Text(label, style: const TextStyle(color: Colors.black87)),
       ),
-      child: Text(label, style: const TextStyle(color: Colors.black87)),
     );
   }
 }

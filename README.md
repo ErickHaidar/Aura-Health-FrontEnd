@@ -48,6 +48,23 @@ Pastikan Anda sudah menginstal:
     ```bash
     flutter pub get
     ```
+
+### Menjalankan Ngrok & Koneksi ke Backend
+Karena aplikasi mobile memerlukan IP publik/Ngrok untuk menembak API lokal di laptop, ikuti panduan ini setiap kali memulai kerja (agar tidak lupa):
+1. **Jalankan Backend:** Pastikan backend Node.js/Laravel Anda sudah jalan di port `3000` (atau port lain sesuai backend Anda).
+2. **Jalankan Ngrok via VS Code Task:**
+   - Tekan tombol `Ctrl + Shift + P` di VS Code.
+   - Ketik dan pilih **Tasks: Run Task**.
+   - Pilih **Run Ngrok (Port 3000)**.
+   *(Ini otomatis akan membuka tab terminal baru berisi ngrok seperti di screenshot project lama Anda).*
+3. **Update URL di Flutter:**
+   - Copy URL `Forwarding` dari terminal Ngrok (contoh: `https://abcd-123.ngrok-free.dev`).
+   - Buka file `lib/services/api_config.dart`.
+   - Paste URL tersebut ke variabel `_ngrokUrl`.
+   ```dart
+   static const _ngrokUrl = 'https://url-ngrok-baru-kamu.ngrok-free.dev';
+   ```
+
 3.  **Jalankan Aplikasi:** Pastikan Emulator sudah menyala atau HP Anda sudah terhubung menggunakan kabel USB (*USB Debugging* aktif). Lalu jalankan:
     ```bash
     flutter run

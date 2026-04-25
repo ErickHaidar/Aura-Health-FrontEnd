@@ -1,9 +1,59 @@
 ﻿import 'package:flutter/material.dart';
 import '../theme.dart';
+import '../models/post.dart';
+import '../services/community_service.dart';
 import 'create_post_screen.dart';
 
-class CommunityScreen extends StatelessWidget {
+class CommunityScreen extends StatefulWidget {
   const CommunityScreen({super.key});
+
+  @override
+  State<CommunityScreen> createState() => _CommunityScreenState();
+}
+
+class _CommunityScreenState extends State<CommunityScreen> {
+  List<Post> _posts = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPosts();
+  }
+
+  Future<void> _loadPosts() async {
+    final result = await CommunityService.getPosts();
+
+    if (!mounted) return;
+
+    setState(() {
+      if (result['success'] == true) {
+        _posts = result['posts'] as List<Post>;
+      }
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _handleLike(int postId, int index) async {
+    final result = await CommunityService.toggleLike(postId);
+    if (result['success'] == true) {
+      _loadPosts(); // Refresh data
+    }
+  }
+
+  String _formatTime(String? createdAt) {
+    if (createdAt == null) return '';
+    try {
+      final date = DateTime.parse(createdAt);
+      final diff = DateTime.now().difference(date);
+      if (diff.inMinutes < 60) return '${diff.inMinutes} menit yang lalu';
+      if (diff.inHours < 24) return '${diff.inHours} jam yang lalu';
+      if (diff.inDays < 7) return '${diff.inDays} hari yang lalu';
+      return '${date.day}/${date.month}/${date.year}';
+    } catch (_) {
+      return createdAt;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,102 +80,138 @@ class CommunityScreen extends StatelessWidget {
             ),
           ],
         ),
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Komunitas',
-                          style: Theme.of(context).textTheme.titleLarge
-                              ?.copyWith(
-                                color: AppTheme.primaryColor,
-                                fontSize: 28,
-                              ),
-                        ),
-                        const Text(
-                          'Bagikan ceritamu dan dukung sesama',
-                          style: TextStyle(color: Colors.grey),
-                        ),
-                      ],
-                    ),
-                  ),
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const CreatePostScreen(),
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.edit, size: 16),
-                    label: const Text(
-                      'Buat\nPost',
-                      textAlign: TextAlign.center,
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
+        body: RefreshIndicator(
+          onRefresh: _loadPosts,
+          color: AppTheme.primaryColor,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Komunitas',
+                            style: Theme.of(context).textTheme.titleLarge
+                                ?.copyWith(
+                                  color: AppTheme.primaryColor,
+                                  fontSize: 28,
+                                ),
+                          ),
+                          const Text(
+                            'Bagikan ceritamu dan dukung sesama',
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        ],
                       ),
-                      minimumSize: const Size(0, 0),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              _buildPostCard(
-                name: 'Siti Rahmawati',
-                time: '2 jam yang lalu',
-                content:
-                    'Hari ini selesai minum obat bulan ke-3! Semangat teman-teman! Perjalanan masih panjang tapi aku yakin kita semua bisa sembuh. Jangan lupa minum air putih yang banyak ya ????',
-                likes: 24,
-                comments: 5,
-              ),
-              const SizedBox(height: 16),
-              _buildPostCard(
-                name: 'Andi Saputra',
-                time: '5 jam yang lalu',
-                content:
-                    'Halo, mau tanya dong. Seminggu terakhir setelah minum obat perut rasanya agak mual. Apakah ada tips dari teman-teman untuk mengurangi rasa mualnya? Terima kasih.',
-                likes: 12,
-                comments: 8,
-                tag: 'TANYA DOKTER',
-              ),
-              const SizedBox(height: 16),
-              _buildPostCard(
-                name: 'Maya Indah',
-                time: 'Kemarin',
-                content:
-                    'Jalan pagi hari ini udara segar sekali! Sangat membantu untuk pernapasan. Jangan lupa olahraga ringan ya teman-teman. ???????',
-                likes: 45,
-                comments: 2,
-                hasImage: true,
-              ),
-              const SizedBox(height: 80),
-            ],
+                    ElevatedButton.icon(
+                      onPressed: () async {
+                        final created = await Navigator.push<bool>(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const CreatePostScreen(),
+                          ),
+                        );
+                        if (created == true) _loadPosts();
+                      },
+                      icon: const Icon(Icons.edit, size: 16),
+                      label: const Text(
+                        'Buat\nPost',
+                        textAlign: TextAlign.center,
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        minimumSize: const Size(0, 0),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                if (_isLoading)
+                  const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(32.0),
+                      child: CircularProgressIndicator(color: AppTheme.primaryColor),
+                    ),
+                  )
+                else if (_posts.isEmpty)
+                  _buildStaticPosts()
+                else
+                  ..._posts.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final post = entry.value;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: _buildPostCard(
+                        postId: post.id,
+                        index: index,
+                        name: post.authorName,
+                        time: _formatTime(post.createdAt),
+                        content: post.content,
+                        likes: post.likesCount,
+                        comments: post.commentsCount,
+                        isLiked: post.isLiked,
+                        hasImage: post.imageUrl != null,
+                        imageUrl: post.imageUrl,
+                      ),
+                    );
+                  }),
+                const SizedBox(height: 80),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
+  Widget _buildStaticPosts() {
+    return Column(
+      children: [
+        _buildPostCard(
+          name: 'Siti Rahmawati',
+          time: '2 jam yang lalu',
+          content:
+              'Hari ini selesai minum obat bulan ke-3! Semangat teman-teman! Perjalanan masih panjang tapi aku yakin kita semua bisa sembuh.',
+          likes: 24,
+          comments: 5,
+        ),
+        const SizedBox(height: 16),
+        _buildPostCard(
+          name: 'Andi Saputra',
+          time: '5 jam yang lalu',
+          content:
+              'Halo, mau tanya dong. Seminggu terakhir setelah minum obat perut rasanya agak mual. Apakah ada tips dari teman-teman?',
+          likes: 12,
+          comments: 8,
+          tag: 'TANYA DOKTER',
+        ),
+      ],
+    );
+  }
+
   Widget _buildPostCard({
+    int? postId,
+    int? index,
     required String name,
     required String time,
     required String content,
     required int likes,
     required int comments,
+    bool isLiked = false,
     String? tag,
     bool hasImage = false,
+    String? imageUrl,
   }) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -199,18 +285,35 @@ class CommunityScreen extends StatelessWidget {
                 color: Colors.green.shade100,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Center(
-                child: Icon(Icons.image, size: 48, color: Colors.white),
-              ),
+              child: imageUrl != null
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.network(
+                        imageUrl,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => const Center(
+                          child: Icon(Icons.image, size: 48, color: Colors.white),
+                        ),
+                      ),
+                    )
+                  : const Center(
+                      child: Icon(Icons.image, size: 48, color: Colors.white),
+                    ),
             ),
           ],
           const SizedBox(height: 16),
           Row(
             children: [
-              const Icon(
-                Icons.favorite,
-                color: AppTheme.primaryColor,
-                size: 20,
+              GestureDetector(
+                onTap: postId != null && index != null
+                    ? () => _handleLike(postId, index)
+                    : null,
+                child: Icon(
+                  isLiked ? Icons.favorite : Icons.favorite_border,
+                  color: isLiked ? Colors.red : AppTheme.primaryColor,
+                  size: 20,
+                ),
               ),
               const SizedBox(width: 4),
               Text(

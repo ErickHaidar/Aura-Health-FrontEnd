@@ -1,9 +1,56 @@
 ﻿import 'package:flutter/material.dart';
 import '../theme.dart';
+import '../services/education_service.dart';
+import '../models/education.dart';
 import 'education_category_screen.dart';
 
-class EducationScreen extends StatelessWidget {
+class EducationScreen extends StatefulWidget {
   const EducationScreen({super.key});
+
+  @override
+  State<EducationScreen> createState() => _EducationScreenState();
+}
+
+class _EducationScreenState extends State<EducationScreen> {
+  List<EducationCategory> _categories = [];
+  bool _isLoading = true;
+
+  // Fallback icons berdasarkan nama kategori
+  static const _categoryIcons = {
+    'mengenal tbc': Icons.coronavirus,
+    'gejala': Icons.health_and_safety,
+    'deteksi': Icons.health_and_safety,
+    'pencegahan': Icons.shield,
+    'obat': Icons.medication,
+    'oat': Icons.medication,
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCategories();
+  }
+
+  Future<void> _loadCategories() async {
+    final result = await EducationService.getCategories();
+
+    if (!mounted) return;
+
+    setState(() {
+      if (result['success'] == true) {
+        _categories = result['categories'] as List<EducationCategory>;
+      }
+      _isLoading = false;
+    });
+  }
+
+  IconData _getIconForCategory(String name) {
+    final lower = name.toLowerCase();
+    for (final entry in _categoryIcons.entries) {
+      if (lower.contains(entry.key)) return entry.value;
+    }
+    return Icons.menu_book;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,40 +102,64 @@ class EducationScreen extends StatelessWidget {
                 ).textTheme.titleLarge?.copyWith(fontSize: 20),
               ),
               const SizedBox(height: 16),
-              _buildCategoryCard(
-                context,
-                icon: Icons.coronavirus,
-                title: 'Mengenal TBC',
-                description: 'Pahami dasar-dasar penyakit tuberkulosis.',
-              ),
-              const SizedBox(height: 16),
-              _buildCategoryCard(
-                context,
-                icon: Icons.health_and_safety,
-                title: 'Gejala & Deteksi',
-                description: 'Kenali tanda-tanda awal dan cara pemeriksaannya.',
-              ),
-              const SizedBox(height: 16),
-              _buildCategoryCard(
-                context,
-                icon: Icons.shield,
-                title: 'Pencegahan',
-                description: 'Langkah-langkah melindungi diri dan keluarga.',
-                iconColor: Colors.brown,
-              ),
-              const SizedBox(height: 16),
-              _buildCategoryCard(
-                context,
-                icon: Icons.medication,
-                title: 'Obat-obatan OAT',
-                description: 'Panduan lengkap pengobatan dan efek samping.',
-              ),
+              if (_isLoading)
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(32.0),
+                    child: CircularProgressIndicator(color: AppTheme.primaryColor),
+                  ),
+                )
+              else if (_categories.isNotEmpty)
+                ..._categories.map((cat) => Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: _buildCategoryCard(
+                    context,
+                    icon: _getIconForCategory(cat.name),
+                    title: cat.name,
+                    description: cat.description ?? 'Pelajari lebih lanjut tentang ${cat.name}.',
+                  ),
+                ))
+              else
+                ..._buildStaticCategories(context),
               const SizedBox(height: 80),
             ],
           ),
         ),
       ),
     );
+  }
+
+  List<Widget> _buildStaticCategories(BuildContext context) {
+    return [
+      _buildCategoryCard(
+        context,
+        icon: Icons.coronavirus,
+        title: 'Mengenal TBC',
+        description: 'Pahami dasar-dasar penyakit tuberkulosis.',
+      ),
+      const SizedBox(height: 16),
+      _buildCategoryCard(
+        context,
+        icon: Icons.health_and_safety,
+        title: 'Gejala & Deteksi',
+        description: 'Kenali tanda-tanda awal dan cara pemeriksaannya.',
+      ),
+      const SizedBox(height: 16),
+      _buildCategoryCard(
+        context,
+        icon: Icons.shield,
+        title: 'Pencegahan',
+        description: 'Langkah-langkah melindungi diri dan keluarga.',
+        iconColor: Colors.brown,
+      ),
+      const SizedBox(height: 16),
+      _buildCategoryCard(
+        context,
+        icon: Icons.medication,
+        title: 'Obat-obatan OAT',
+        description: 'Panduan lengkap pengobatan dan efek samping.',
+      ),
+    ];
   }
 
   Widget _buildCategoryCard(

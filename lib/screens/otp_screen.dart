@@ -1,11 +1,109 @@
 ﻿import 'package:flutter/material.dart';
+import 'dart:async';
 import '../theme.dart';
+import '../services/auth_service.dart';
 
-class OtpScreen extends StatelessWidget {
+class OtpScreen extends StatefulWidget {
   const OtpScreen({super.key});
 
   @override
+  State<OtpScreen> createState() => _OtpScreenState();
+}
+
+class _OtpScreenState extends State<OtpScreen> {
+  final List<TextEditingController> _controllers = List.generate(
+    6,
+    (_) => TextEditingController(),
+  );
+  final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
+
+  bool _isLoading = false;
+  int _countdown = 59;
+  Timer? _timer;
+  String _email = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _startCountdown();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args is String) {
+      _email = args;
+    }
+  }
+
+  void _startCountdown() {
+    _countdown = 59;
+    _timer?.cancel();
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_countdown > 0) {
+        setState(() => _countdown--);
+      } else {
+        timer.cancel();
+      }
+    });
+  }
+
+  Future<void> _handleResendOtp() async {
+    if (_email.isEmpty) return;
+    await AuthService.requestOtp(_email);
+    if (!mounted) return;
+    _startCountdown();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('OTP baru telah dikirim')),
+    );
+  }
+
+  Future<void> _handleVerify() async {
+    final otp = _controllers.map((c) => c.text).join();
+
+    if (otp.length < 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Masukkan 6 digit kode OTP')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    final result = await AuthService.verifyOtp(_email, otp);
+
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    if (result['success'] == true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result['message'] ?? 'Verifikasi berhasil')),
+      );
+      Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result['message'] ?? 'Kode OTP salah')),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    for (final c in _controllers) {
+      c.dispose();
+    }
+    for (final f in _focusNodes) {
+      f.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final displayEmail = _email.isNotEmpty ? _email : 'email Anda';
+
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -39,7 +137,7 @@ class OtpScreen extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Masukkan 6 digit kode yang dikirim ke email\ntest@gmail.com',
+                'Masukkan 6 digit kode yang dikirim ke\n$displayEmail',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
@@ -49,33 +147,41 @@ class OtpScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: List.generate(
                   6,
-                  (index) => _buildOtpBox(
-                    index == 0
-                        ? '4'
-                        : index == 1
-                        ? '8'
-                        : '',
-                  ),
+                  (index) => _buildOtpInput(index),
                 ),
               ),
 
               const SizedBox(height: 32),
-              Text(
-                'Kirim ulang dalam 59 detik',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: AppTheme.primaryColor),
-              ),
+              _countdown > 0
+                  ? Text(
+                      'Kirim ulang dalam $_countdown detik',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: AppTheme.primaryColor),
+                    )
+                  : TextButton(
+                      onPressed: _handleResendOtp,
+                      child: const Text(
+                        'Kirim Ulang OTP',
+                        style: TextStyle(
+                          color: AppTheme.primaryColor,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
 
               const SizedBox(height: 32),
               ElevatedButton(
-                onPressed: () {
-                  Navigator.pushNamedAndRemoveUntil(
-                    context,
-                    '/main',
-                    (route) => false,
-                  );
-                },
-                child: const Text('Verifikasi'),
+                onPressed: _isLoading ? null : _handleVerify,
+                child: _isLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text('Verifikasi'),
               ),
 
               const SizedBox(height: 16),
@@ -98,19 +204,42 @@ class OtpScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildOtpBox(String value) {
-    return Container(
+  Widget _buildOtpInput(int index) {
+    return SizedBox(
       width: 48,
       height: 56,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: Text(
-        value,
+      child: TextFormField(
+        controller: _controllers[index],
+        focusNode: _focusNodes[index],
+        textAlign: TextAlign.center,
+        keyboardType: TextInputType.number,
+        maxLength: 1,
         style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+        decoration: InputDecoration(
+          counterText: '',
+          contentPadding: EdgeInsets.zero,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: const BorderSide(color: AppTheme.primaryColor),
+          ),
+          filled: true,
+          fillColor: Colors.white,
+        ),
+        onChanged: (value) {
+          if (value.isNotEmpty && index < 5) {
+            _focusNodes[index + 1].requestFocus();
+          } else if (value.isEmpty && index > 0) {
+            _focusNodes[index - 1].requestFocus();
+          }
+        },
       ),
     );
   }

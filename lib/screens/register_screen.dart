@@ -1,8 +1,74 @@
 ﻿import 'package:flutter/material.dart';
 import '../theme.dart';
+import '../services/auth_service.dart';
 
-class RegisterScreen extends StatelessWidget {
+class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
+
+  @override
+  State<RegisterScreen> createState() => _RegisterScreenState();
+}
+
+class _RegisterScreenState extends State<RegisterScreen> {
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _isLoading = false;
+  bool _agreedToTerms = false;
+  bool _obscurePassword = true;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleRegister() async {
+    final name = _nameController.text.trim();
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (name.isEmpty || email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Semua field harus diisi')),
+      );
+      return;
+    }
+
+    if (!_agreedToTerms) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Anda harus menyetujui Syarat dan Ketentuan')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    final result = await AuthService.register(name, email, password);
+
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    if (result['success'] == true) {
+      // TODO: OTP sementara dimatikan karena belum butuh
+      // await AuthService.requestOtp(email);
+      // Navigator.pushNamed(context, '/otp', arguments: email);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Registrasi berhasil! Silakan login.')),
+      );
+      
+      if (!mounted) return;
+      // Langsung arahkan kembali ke halaman Login
+      Navigator.pop(context);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result['message'] ?? 'Register gagal')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -52,6 +118,7 @@ class RegisterScreen extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               TextFormField(
+                controller: _nameController,
                 decoration: const InputDecoration(
                   hintText: 'Masukkan nama lengkap Anda',
                   prefixIcon: Icon(Icons.person_outline),
@@ -65,22 +132,11 @@ class RegisterScreen extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               TextFormField(
+                controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
                 decoration: const InputDecoration(
                   hintText: 'Masukkan alamat email Anda',
                   prefixIcon: Icon(Icons.email_outlined),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              const Text(
-                'No. WhatsApp',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              TextFormField(
-                decoration: const InputDecoration(
-                  hintText: 'Masukkan nomor WhatsApp',
-                  prefixIcon: Icon(Icons.phone_android_outlined),
                 ),
               ),
               const SizedBox(height: 16),
@@ -91,18 +147,33 @@ class RegisterScreen extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               TextFormField(
-                obscureText: true,
-                decoration: const InputDecoration(
+                controller: _passwordController,
+                obscureText: _obscurePassword,
+                decoration: InputDecoration(
                   hintText: 'Buat password',
-                  prefixIcon: Icon(Icons.lock_outline),
-                  suffixIcon: Icon(Icons.visibility_off_outlined),
+                  prefixIcon: const Icon(Icons.lock_outline),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePassword
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
+                    ),
+                    onPressed: () {
+                      setState(() => _obscurePassword = !_obscurePassword);
+                    },
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
 
               Row(
                 children: [
-                  Checkbox(value: false, onChanged: (val) {}),
+                  Checkbox(
+                    value: _agreedToTerms,
+                    onChanged: (val) {
+                      setState(() => _agreedToTerms = val ?? false);
+                    },
+                  ),
                   Expanded(
                     child: RichText(
                       text: const TextSpan(
@@ -122,10 +193,17 @@ class RegisterScreen extends StatelessWidget {
 
               const SizedBox(height: 24),
               ElevatedButton(
-                onPressed: () {
-                  Navigator.pushNamed(context, '/otp');
-                },
-                child: const Text('Daftar Sekarang'),
+                onPressed: _isLoading ? null : _handleRegister,
+                child: _isLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text('Daftar Sekarang'),
               ),
 
               const SizedBox(height: 24),

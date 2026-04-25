@@ -1,8 +1,49 @@
 ﻿import 'package:flutter/material.dart';
 import '../theme.dart';
+import '../services/community_service.dart';
 
-class CreatePostScreen extends StatelessWidget {
+class CreatePostScreen extends StatefulWidget {
   const CreatePostScreen({super.key});
+
+  @override
+  State<CreatePostScreen> createState() => _CreatePostScreenState();
+}
+
+class _CreatePostScreenState extends State<CreatePostScreen> {
+  final _contentController = TextEditingController();
+  bool _isPosting = false;
+
+  @override
+  void dispose() {
+    _contentController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handlePost() async {
+    final content = _contentController.text.trim();
+
+    if (content.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Tulis sesuatu terlebih dahulu')),
+      );
+      return;
+    }
+
+    setState(() => _isPosting = true);
+
+    final result = await CommunityService.createPost(content);
+
+    if (!mounted) return;
+    setState(() => _isPosting = false);
+
+    if (result['success'] == true) {
+      Navigator.pop(context, true); // true = post berhasil dibuat
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result['message'] ?? 'Gagal membuat post')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,14 +66,21 @@ class CreatePostScreen extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context); // Kembali setelah post (simulasi)
-              },
+              onPressed: _isPosting ? null : _handlePost,
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 minimumSize: const Size(0, 0),
               ),
-              child: const Text('Kirim'),
+              child: _isPosting
+                  ? const SizedBox(
+                      height: 16,
+                      width: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text('Kirim'),
             ),
           ),
         ],
@@ -57,6 +105,7 @@ class CreatePostScreen extends StatelessWidget {
             const SizedBox(height: 16),
             Expanded(
               child: TextField(
+                controller: _contentController,
                 maxLines: null,
                 decoration: const InputDecoration(
                   hintText: 'Apa yang ingin Anda bagikan hari ini?',
@@ -72,14 +121,23 @@ class CreatePostScreen extends StatelessWidget {
               children: [
                 IconButton(
                   icon: const Icon(Icons.image, color: AppTheme.primaryColor),
-                  onPressed: () {},
+                  onPressed: () {
+                    // TODO: Implement image picker
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Fitur upload gambar akan segera hadir')),
+                    );
+                  },
                 ),
                 IconButton(
                   icon: const Icon(
                     Icons.camera_alt,
                     color: AppTheme.primaryColor,
                   ),
-                  onPressed: () {},
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Fitur kamera akan segera hadir')),
+                    );
+                  },
                 ),
               ],
             ),

@@ -1,14 +1,59 @@
 ﻿import 'package:flutter/material.dart';
 import '../theme.dart';
+import '../models/article.dart';
+import '../services/article_service.dart';
+import '../services/auth_service.dart';
 import 'education_screen.dart';
 import 'community_screen.dart';
-import 'chatbot_screen.dart ';
+import 'chatbot_screen.dart';
 import 'detection_flow_screen.dart';
 import 'profile_screen.dart';
 import 'article_detail_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  List<Article> _articles = [];
+  bool _isLoading = true;
+  String _userName = 'Pengguna';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    // Load user name dan artikel secara paralel
+    final userFuture = AuthService.getSavedUser();
+    final articleFuture = ArticleService.getArticles(limit: 5);
+
+    final userData = await userFuture;
+    final articleResult = await articleFuture;
+
+    if (!mounted) return;
+
+    setState(() {
+      _userName = userData['name'] ?? 'Pengguna';
+      if (articleResult['success'] == true) {
+        _articles = articleResult['articles'] as List<Article>;
+      }
+      _isLoading = false;
+    });
+  }
+
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Selamat Pagi';
+    if (hour < 15) return 'Selamat Siang';
+    if (hour < 18) return 'Selamat Sore';
+    return 'Selamat Malam';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -21,22 +66,24 @@ class HomeScreen extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Halo, Selamat Pagi!',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: AppTheme.primaryColor,
-                        fontSize: 24,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Halo, ${_getGreeting()}!',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          color: AppTheme.primaryColor,
+                          fontSize: 24,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Mari lanjutkan perjalanan sehatmu.',
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                  ],
+                      const SizedBox(height: 4),
+                      Text(
+                        'Mari lanjutkan perjalanan sehatmu, $_userName.',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    ],
+                  ),
                 ),
                 GestureDetector(
                   onTap: () {
@@ -118,38 +165,80 @@ class HomeScreen extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
-            SizedBox(
-              height: 200,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const ArticleDetailScreen(),
+            _isLoading
+                ? const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor))
+                : _articles.isEmpty
+                    ? _buildStaticArticles(context)
+                    : SizedBox(
+                        height: 200,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: _articles.length,
+                          separatorBuilder: (_, __) => const SizedBox(width: 16),
+                          itemBuilder: (context, index) {
+                            final article = _articles[index];
+                            return GestureDetector(
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ArticleDetailScreen(articleId: article.id),
+                                ),
+                              ),
+                              child: _buildArticleCard(
+                                article.category.toUpperCase(),
+                                article.title,
+                                _getCategoryColor(index),
+                              ),
+                            );
+                          },
+                        ),
                       ),
-                    ),
-                    child: _buildArticleCard(
-                      'NUTRISI',
-                      'Pentingnya Nutrisi Seimbang Selama Pengobatan',
-                      Colors.blue.shade100,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  _buildArticleCard(
-                    'GAYA HIDUP',
-                    'Olahraga Ringan Untuk Stamina',
-                    Colors.orange.shade100,
-                  ),
-                ],
-              ),
-            ),
             const SizedBox(height: 80),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildStaticArticles(BuildContext context) {
+    return SizedBox(
+      height: 200,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: [
+          GestureDetector(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const ArticleDetailScreen(),
+              ),
+            ),
+            child: _buildArticleCard(
+              'NUTRISI',
+              'Pentingnya Nutrisi Seimbang Selama Pengobatan',
+              Colors.blue.shade100,
+            ),
+          ),
+          const SizedBox(width: 16),
+          _buildArticleCard(
+            'GAYA HIDUP',
+            'Olahraga Ringan Untuk Stamina',
+            Colors.orange.shade100,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _getCategoryColor(int index) {
+    final colors = [
+      Colors.blue.shade100,
+      Colors.orange.shade100,
+      Colors.green.shade100,
+      Colors.purple.shade100,
+      Colors.red.shade100,
+    ];
+    return colors[index % colors.length];
   }
 
   Widget _buildServiceCard(IconData icon, String title, VoidCallback onTap) {
