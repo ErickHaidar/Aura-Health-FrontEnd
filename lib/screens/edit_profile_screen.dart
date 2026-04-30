@@ -1,4 +1,6 @@
 ﻿import 'package:flutter/material.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 import '../theme.dart';
 import '../models/user.dart';
 import '../services/user_service.dart';
@@ -16,6 +18,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late final TextEditingController _nameController;
   late final TextEditingController _bioController;
   bool _isSaving = false;
+  File? _imageFile;
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
@@ -34,6 +38,25 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _bioController.dispose();
     super.dispose();
   }
+  Future<void> _pickImage() async {
+    try {
+      final XFile? pickedFile = await _picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 512,
+        maxHeight: 512,
+        imageQuality: 75,
+      );
+      if (pickedFile != null) {
+        setState(() {
+          _imageFile = File(pickedFile.path);
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal memilih gambar: $e')),
+      );
+    }
+  }
 
   Future<void> _handleSave() async {
     final name = _nameController.text.trim();
@@ -50,6 +73,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       name: name,
       bio: _bioController.text.trim(),
     );
+
+    if (_imageFile != null && result['success'] == true) {
+      await UserService.uploadAvatar(_imageFile!.path);
+    }
 
     if (!mounted) return;
     setState(() => _isSaving = false);
@@ -70,7 +97,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppTheme.primaryColor),
@@ -95,10 +122,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   CircleAvatar(
                     radius: 50,
                     backgroundColor: AppTheme.primaryColor,
-                    backgroundImage: widget.user?.avatarUrl != null
-                        ? NetworkImage(widget.user!.avatarUrl!)
-                        : null,
-                    child: widget.user?.avatarUrl == null
+                    backgroundImage: _imageFile != null
+                        ? FileImage(_imageFile!) as ImageProvider
+                        : (widget.user?.avatarUrl != null
+                            ? NetworkImage(widget.user!.avatarUrl!) as ImageProvider
+                            : null),
+                    child: (_imageFile == null && widget.user?.avatarUrl == null)
                         ? const Icon(Icons.person, size: 50, color: Colors.white)
                         : null,
                   ),
@@ -106,12 +135,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     bottom: 0,
                     right: 0,
                     child: GestureDetector(
-                      onTap: () {
-                        // TODO: Implement image picker + UserService.uploadAvatar
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Fitur upload avatar akan segera hadir')),
-                        );
-                      },
+                      onTap: _pickImage,
                       child: Container(
                         padding: const EdgeInsets.all(4),
                         decoration: const BoxDecoration(

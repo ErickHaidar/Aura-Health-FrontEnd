@@ -12,8 +12,10 @@ class AppTheme {
 
   static ThemeData get theme {
     return ThemeData(
+      brightness: Brightness.light,
       primaryColor: primaryColor,
       scaffoldBackgroundColor: backgroundColor,
+      cardColor: Colors.white,
       textTheme: GoogleFonts.interTextTheme().copyWith(
         displayLarge: GoogleFonts.inter(
           color: textDark,
@@ -57,6 +59,58 @@ class AppTheme {
           borderSide: const BorderSide(color: primaryColor),
         ),
         hintStyle: TextStyle(color: Colors.grey.shade400),
+      ),
+    );
+  }
+  static ThemeData get darkTheme {
+    return ThemeData(
+      brightness: Brightness.dark,
+      primaryColor: primaryColor,
+      scaffoldBackgroundColor: const Color(0xFF121212),
+      cardColor: const Color(0xFF1E1E1E),
+      textTheme: GoogleFonts.interTextTheme().copyWith(
+        displayLarge: GoogleFonts.inter(
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+        ),
+        titleLarge: GoogleFonts.inter(
+          color: Colors.white,
+          fontWeight: FontWeight.w700,
+        ),
+        bodyLarge: GoogleFonts.inter(color: Colors.white70),
+        bodyMedium: GoogleFonts.inter(color: Colors.white60),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: primaryColor,
+          foregroundColor: Colors.white,
+          minimumSize: const Size(double.infinity, 50),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: const Color(0xFF1E1E1E),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey.shade800),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey.shade800),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: primaryColor),
+        ),
+        hintStyle: TextStyle(color: Colors.grey.shade600),
       ),
     );
   }
