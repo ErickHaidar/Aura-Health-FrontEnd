@@ -1,16 +1,14 @@
-﻿import 'dart:io';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ApiConfig {
-  // Jika menggunakan Emulator Android, localhost harus diganti jadi 10.0.2.2
-  // Jika mengetes di HP fisik via WiFi, ganti dengan IP Address laptop (contoh: 192.168.1.10)
-  // Ngrok URL — ganti kalau ngrok restart (URL berubah)
-  static const _ngrokUrl = 'https://tobie-unpensioning-melia.ngrok-free.dev';
-
   static String get baseUrl {
+    // Mengambil URL dari .env, jika tidak ada pakai default
+    final envUrl = dotenv.get('API_URL', fallback: 'https://tobie-unpensioning-melia.ngrok-free.dev');
+    
     if (kIsWeb) return 'http://localhost:3000/api';
-    // Pakai ngrok untuk HP fisik (bypass WiFi isolation)
-    return '$_ngrokUrl/api';
+    return '$envUrl/api';
   }
 
   // Helper untuk Headers

@@ -5,8 +5,10 @@ import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/otp_screen.dart';
 import 'screens/main_screen.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-void main() {
+Future<void> main() async {
+  await dotenv.load(fileName: ".env");
   runApp(const AuraHealthApp());
 }
 
@@ -19,7 +21,7 @@ class AuraHealthApp extends StatelessWidget {
       title: 'Aura Health',
       theme: AppTheme.theme,
       debugShowCheckedModeBanner: false,
-      initialRoute: '/',
+      initialRoute: '/main',
       routes: {
         '/': (context) => const SplashScreen(),
         '/login': (context) => const LoginScreen(),

@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'api_config.dart';
@@ -155,14 +155,16 @@ class AuthService {
 
   // ─── Ambil Access Token (dengan auto-refresh jika expired) ───
   static Future<String?> getToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_keyAccessToken);
+    // final prefs = await SharedPreferences.getInstance();
+    // return prefs.getString(_keyAccessToken);
+    return "dummy_token_development";
   }
 
   // ─── Cek apakah user sudah login ───
   static Future<bool> isLoggedIn() async {
-    final token = await getToken();
-    return token != null;
+    // final token = await getToken();
+    // return token != null;
+    return true;
   }
 
   // ─── Ambil data user tersimpan ───
