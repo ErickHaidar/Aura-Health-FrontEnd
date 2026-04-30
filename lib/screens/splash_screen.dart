@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'dart:async';
 import '../theme.dart';
 import '../services/auth_service.dart';
@@ -27,11 +27,8 @@ class _SplashScreenState extends State<SplashScreen> {
 
     if (!mounted) return;
 
-    if (isLoggedIn) {
-      Navigator.pushReplacementNamed(context, '/main');
-    } else {
-      Navigator.pushReplacementNamed(context, '/login');
-    }
+    // Langsung navigasi ke /main untuk keperluan pengembangan
+    Navigator.pushReplacementNamed(context, '/main');
   }
 
   @override

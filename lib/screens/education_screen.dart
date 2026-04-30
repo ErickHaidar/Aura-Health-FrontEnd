@@ -23,6 +23,8 @@ class _EducationScreenState extends State<EducationScreen> {
     'pencegahan': Icons.shield,
     'obat': Icons.medication,
     'oat': Icons.medication,
+    'etika batuk': Icons.record_voice_over,
+    'nutrisi': Icons.restaurant,
   };
 
   @override
@@ -158,6 +160,20 @@ class _EducationScreenState extends State<EducationScreen> {
         icon: Icons.medication,
         title: 'Obat-obatan OAT',
         description: 'Panduan lengkap pengobatan dan efek samping.',
+      ),
+      const SizedBox(height: 16),
+      _buildCategoryCard(
+        context,
+        icon: Icons.record_voice_over,
+        title: 'Etika Batuk',
+        description: 'Cara batuk yang benar agar tidak menularkan ke orang lain.',
+      ),
+      const SizedBox(height: 16),
+      _buildCategoryCard(
+        context,
+        icon: Icons.restaurant,
+        title: 'Nutrisi TBC',
+        description: 'Kebutuhan gizi bagi penderita TBC untuk mempercepat kesembuhan.',
       ),
     ];
   }
