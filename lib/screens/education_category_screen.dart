@@ -1,7 +1,8 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../theme.dart';
 import '../models/education.dart';
 import '../services/education_service.dart';
+import 'article_detail_screen.dart';
 
 class EducationCategoryScreen extends StatefulWidget {
   final String title;
@@ -100,51 +101,12 @@ class _EducationCategoryScreenState extends State<EducationCategoryScreen> {
                           color: AppTheme.primaryColor,
                         ),
                         onTap: () {
-                          // Detail edukasi bisa di-expand di sini
-                          showModalBottomSheet(
-                            context: context,
-                            isScrollControlled: true,
-                            shape: const RoundedRectangleBorder(
-                              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-                            ),
-                            builder: (context) => DraggableScrollableSheet(
-                              expand: false,
-                              initialChildSize: 0.7,
-                              maxChildSize: 0.9,
-                              builder: (context, scrollController) => SingleChildScrollView(
-                                controller: scrollController,
-                                padding: const EdgeInsets.all(24),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Center(
-                                      child: Container(
-                                        width: 40,
-                                        height: 4,
-                                        decoration: BoxDecoration(
-                                          color: Colors.grey.shade300,
-                                          borderRadius: BorderRadius.circular(2),
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 24),
-                                    Text(
-                                      content.title,
-                                      style: const TextStyle(
-                                        fontSize: 22,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 16),
-                                    Text(
-                                      content.content,
-                                      style: const TextStyle(
-                                        fontSize: 15,
-                                        height: 1.6,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ArticleDetailScreen(
+                                defaultTitle: content.title,
+                                defaultContent: content.content,
                               ),
                             ),
                           );
