@@ -1,5 +1,7 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../theme.dart';
+import 'package:provider/provider.dart';
+import '../providers/theme_provider.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -39,13 +41,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
             subtitle: const Text('Ganti tema aplikasi menjadi gelap'),
-            value: _isDarkMode,
+            value: Provider.of<ThemeProvider>(context).themeMode == ThemeMode.dark,
             activeThumbColor: AppTheme.primaryColor,
             onChanged: (val) {
-              setState(() {
-                _isDarkMode = val;
-              });
-              // Logika dark mode sungguhan perlu dikonfigurasi di main.dart dengan Provider/Riverpod
+              Provider.of<ThemeProvider>(context, listen: false).toggleTheme(val);
             },
             secondary: const Icon(Icons.dark_mode_outlined),
           ),

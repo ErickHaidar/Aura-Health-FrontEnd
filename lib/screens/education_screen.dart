@@ -1,8 +1,11 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+import 'dart:io';
 import '../theme.dart';
 import '../services/education_service.dart';
 import '../models/education.dart';
 import 'education_category_screen.dart';
+import '../services/user_service.dart';
+import '../models/user.dart';
 
 class EducationScreen extends StatefulWidget {
   const EducationScreen({super.key});
@@ -14,6 +17,7 @@ class EducationScreen extends StatefulWidget {
 class _EducationScreenState extends State<EducationScreen> {
   List<EducationCategory> _categories = [];
   bool _isLoading = true;
+  User? _user;
 
   // Fallback icons berdasarkan nama kategori
   static const _categoryIcons = {
@@ -34,13 +38,20 @@ class _EducationScreenState extends State<EducationScreen> {
   }
 
   Future<void> _loadCategories() async {
-    final result = await EducationService.getCategories();
+    final catFuture = EducationService.getCategories();
+    final userFuture = UserService.getMyProfile();
+
+    final catResult = await catFuture;
+    final userResult = await userFuture;
 
     if (!mounted) return;
 
     setState(() {
-      if (result['success'] == true) {
-        _categories = result['categories'] as List<EducationCategory>;
+      if (catResult['success'] == true) {
+        _categories = catResult['categories'] as List<EducationCategory>;
+      }
+      if (userResult['success'] == true) {
+        _user = userResult['user'] as User;
       }
       _isLoading = false;
     });
@@ -69,12 +80,19 @@ class _EducationScreenState extends State<EducationScreen> {
               fontWeight: FontWeight.bold,
             ),
           ),
-          actions: const [
+          actions: [
             Padding(
-              padding: EdgeInsets.only(right: 16.0),
+              padding: const EdgeInsets.only(right: 16.0),
               child: CircleAvatar(
-                backgroundColor: Colors.grey,
-                child: Icon(Icons.person, color: Colors.white, size: 20),
+                backgroundColor: AppTheme.primaryColor,
+                backgroundImage: _user?.avatarUrl != null
+                    ? (_user!.avatarUrl!.startsWith('http')
+                        ? NetworkImage(_user!.avatarUrl!) as ImageProvider
+                        : FileImage(File(_user!.avatarUrl!)) as ImageProvider)
+                    : null,
+                child: _user?.avatarUrl == null
+                    ? const Icon(Icons.person, color: Colors.white, size: 20)
+                    : null,
               ),
             ),
           ],

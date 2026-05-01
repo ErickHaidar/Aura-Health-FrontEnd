@@ -1,4 +1,5 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+import 'dart:io';
 import '../theme.dart';
 import '../models/user.dart';
 import '../services/user_service.dart';
@@ -72,7 +73,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       radius: 50,
                       backgroundColor: AppTheme.primaryColor,
                       backgroundImage: _user?.avatarUrl != null
-                          ? NetworkImage(_user!.avatarUrl!)
+                          ? (_user!.avatarUrl!.startsWith('http')
+                              ? NetworkImage(_user!.avatarUrl!) as ImageProvider
+                              : FileImage(File(_user!.avatarUrl!)) as ImageProvider)
                           : null,
                       child: _user?.avatarUrl == null
                           ? const Icon(Icons.person, size: 50, color: Colors.white)
