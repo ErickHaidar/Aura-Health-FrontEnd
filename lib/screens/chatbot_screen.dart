@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
 import '../theme.dart';
 import '../services/chat_service.dart';
+import '../services/user_service.dart';
+import '../models/user.dart';
 
 class ChatbotScreen extends StatefulWidget {
   const ChatbotScreen({super.key});
@@ -15,6 +18,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   final List<Map<String, String>> _messages = [];
   bool _isSending = false;
   bool _isLoadingHistory = true;
+  User? _user;
 
   @override
   void initState() {
@@ -23,13 +27,21 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   }
 
   Future<void> _loadHistory() async {
-    final result = await ChatService.getHistory(limit: 50);
+    final historyFuture = ChatService.getHistory(limit: 50);
+    final userFuture = UserService.getMyProfile();
+
+    final historyResult = await historyFuture;
+    final userResult = await userFuture;
 
     if (!mounted) return;
 
     setState(() {
-      if (result['success'] == true) {
-        final messages = result['messages'] as List;
+      if (userResult['success'] == true) {
+        _user = userResult['user'] as User;
+      }
+      
+      if (historyResult['success'] == true) {
+        final messages = historyResult['messages'] as List;
         for (final msg in messages) {
           _messages.add({'role': 'user', 'text': msg.message});
           if (msg.response != null) {
@@ -301,9 +313,16 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
           ),
         ),
         const SizedBox(width: 12),
-        const CircleAvatar(
+        CircleAvatar(
           backgroundColor: Colors.grey,
-          child: Icon(Icons.person, color: Colors.white, size: 20),
+          backgroundImage: _user?.avatarUrl != null
+              ? (_user!.avatarUrl!.startsWith('http')
+                  ? NetworkImage(_user!.avatarUrl!) as ImageProvider
+                  : FileImage(File(_user!.avatarUrl!)) as ImageProvider)
+              : null,
+          child: _user?.avatarUrl == null
+              ? const Icon(Icons.person, color: Colors.white, size: 20)
+              : null,
         ),
       ],
     );

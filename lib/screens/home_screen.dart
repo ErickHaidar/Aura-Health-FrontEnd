@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
 import '../theme.dart';
 import '../models/article.dart';
 import '../services/article_service.dart';
@@ -9,6 +10,8 @@ import 'chatbot_screen.dart';
 import 'detection_flow_screen.dart';
 import 'profile_screen.dart';
 import 'article_detail_screen.dart';
+import '../services/user_service.dart';
+import '../models/user.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -20,7 +23,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   List<Article> _articles = [];
   bool _isLoading = true;
-  String _userName = 'Pengguna';
+  User? _user;
 
   @override
   void initState() {
@@ -29,17 +32,19 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadData() async {
-    // Load user name dan artikel secara paralel
-    final userFuture = AuthService.getSavedUser();
+    // Load user profile dan artikel secara paralel
+    final userFuture = UserService.getMyProfile();
     final articleFuture = ArticleService.getArticles(limit: 5);
-
-    final userData = await userFuture;
+ 
+    final userResult = await userFuture;
     final articleResult = await articleFuture;
-
+ 
     if (!mounted) return;
-
+ 
     setState(() {
-      _userName = userData['name'] ?? 'Pengguna';
+      if (userResult['success'] == true) {
+        _user = userResult['user'] as User;
+      }
       if (articleResult['success'] == true) {
         _articles = articleResult['articles'] as List<Article>;
       }
@@ -79,25 +84,33 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Mari lanjutkan perjalanan sehatmu, $_userName.',
+                        'Mari lanjutkan perjalanan sehatmu, ${_user?.name ?? 'Pengguna'}.',
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                     ],
                   ),
                 ),
                 GestureDetector(
-                  onTap: () {
-                    Navigator.push(
+                  onTap: () async {
+                    await Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => const ProfileScreen(),
                       ),
                     );
+                    _loadData(); // Refresh data setelah kembali dari profile
                   },
-                  child: const CircleAvatar(
+                  child: CircleAvatar(
                     radius: 24,
                     backgroundColor: AppTheme.primaryColor,
-                    child: Icon(Icons.person, color: Colors.white),
+                    backgroundImage: _user?.avatarUrl != null
+                        ? (_user!.avatarUrl!.startsWith('http')
+                            ? NetworkImage(_user!.avatarUrl!) as ImageProvider
+                            : FileImage(File(_user!.avatarUrl!)) as ImageProvider)
+                        : null,
+                    child: _user?.avatarUrl == null
+                        ? const Icon(Icons.person, color: Colors.white)
+                        : null,
                   ),
                 ),
               ],

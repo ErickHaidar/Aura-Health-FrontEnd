@@ -1,8 +1,11 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+import 'dart:io';
 import '../theme.dart';
 import '../models/post.dart';
 import '../services/community_service.dart';
 import 'create_post_screen.dart';
+import '../services/user_service.dart';
+import '../models/user.dart';
 
 class CommunityScreen extends StatefulWidget {
   const CommunityScreen({super.key});
@@ -14,6 +17,7 @@ class CommunityScreen extends StatefulWidget {
 class _CommunityScreenState extends State<CommunityScreen> {
   List<Post> _posts = [];
   bool _isLoading = true;
+  User? _user;
 
   @override
   void initState() {
@@ -22,13 +26,20 @@ class _CommunityScreenState extends State<CommunityScreen> {
   }
 
   Future<void> _loadPosts() async {
-    final result = await CommunityService.getPosts();
+    final postFuture = CommunityService.getPosts();
+    final userFuture = UserService.getMyProfile();
+
+    final postResult = await postFuture;
+    final userResult = await userFuture;
 
     if (!mounted) return;
 
     setState(() {
-      if (result['success'] == true) {
-        _posts = result['posts'] as List<Post>;
+      if (postResult['success'] == true) {
+        _posts = postResult['posts'] as List<Post>;
+      }
+      if (userResult['success'] == true) {
+        _user = userResult['user'] as User;
       }
       _isLoading = false;
     });
@@ -70,12 +81,19 @@ class _CommunityScreenState extends State<CommunityScreen> {
               fontWeight: FontWeight.bold,
             ),
           ),
-          actions: const [
+          actions: [
             Padding(
-              padding: EdgeInsets.only(right: 16.0),
+              padding: const EdgeInsets.only(right: 16.0),
               child: CircleAvatar(
                 backgroundColor: AppTheme.primaryColor,
-                child: Icon(Icons.person, color: Colors.white, size: 20),
+                backgroundImage: _user?.avatarUrl != null
+                    ? (_user!.avatarUrl!.startsWith('http')
+                        ? NetworkImage(_user!.avatarUrl!) as ImageProvider
+                        : FileImage(File(_user!.avatarUrl!)) as ImageProvider)
+                    : null,
+                child: _user?.avatarUrl == null
+                    ? const Icon(Icons.person, color: Colors.white, size: 20)
+                    : null,
               ),
             ),
           ],

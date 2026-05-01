@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import '../theme.dart';
@@ -72,6 +72,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final result = await UserService.updateProfile(
       name: name,
       bio: _bioController.text.trim(),
+      avatarPath: _imageFile?.path,
     );
 
     if (_imageFile != null && result['success'] == true) {
@@ -117,25 +118,27 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Center(
-              child: Stack(
-                children: [
-                  CircleAvatar(
-                    radius: 50,
-                    backgroundColor: AppTheme.primaryColor,
-                    backgroundImage: _imageFile != null
-                        ? FileImage(_imageFile!) as ImageProvider
-                        : (widget.user?.avatarUrl != null
-                            ? NetworkImage(widget.user!.avatarUrl!) as ImageProvider
-                            : null),
-                    child: (_imageFile == null && widget.user?.avatarUrl == null)
-                        ? const Icon(Icons.person, size: 50, color: Colors.white)
-                        : null,
-                  ),
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: GestureDetector(
-                      onTap: _pickImage,
+              child: GestureDetector(
+                onTap: _pickImage,
+                child: Stack(
+                  children: [
+                    CircleAvatar(
+                      radius: 50,
+                      backgroundColor: AppTheme.primaryColor,
+                      backgroundImage: _imageFile != null
+                          ? FileImage(_imageFile!) as ImageProvider
+                          : (widget.user?.avatarUrl != null
+                              ? (widget.user!.avatarUrl!.startsWith('http')
+                                  ? NetworkImage(widget.user!.avatarUrl!) as ImageProvider
+                                  : FileImage(File(widget.user!.avatarUrl!)) as ImageProvider)
+                              : null),
+                      child: (_imageFile == null && widget.user?.avatarUrl == null)
+                          ? const Icon(Icons.person, size: 50, color: Colors.white)
+                          : null,
+                    ),
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
                       child: Container(
                         padding: const EdgeInsets.all(4),
                         decoration: const BoxDecoration(
@@ -149,8 +152,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 32),
