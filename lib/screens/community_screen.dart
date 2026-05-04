@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
+import 'dart:io';
 import '../theme.dart';
 import '../models/post.dart';
 import '../services/community_service.dart';
 import 'create_post_screen.dart';
 import '../services/user_service.dart';
 import '../models/user.dart';
+import '../widgets/post_skeleton.dart';
+import '../widgets/comment_bottom_sheet.dart';
 
 class CommunityScreen extends StatefulWidget {
   const CommunityScreen({super.key});
@@ -27,10 +30,9 @@ class _CommunityScreenState extends State<CommunityScreen> {
 
   Future<void> _loadPosts() async {
     final postFuture = CommunityService.getPosts();
-    final userFuture = UserService.getMyProfile();
+    final userResult = await UserService.getLocalProfile();
 
     final postResult = await postFuture;
-    final userResult = await userFuture;
 
     if (!mounted) return;
 
@@ -38,18 +40,57 @@ class _CommunityScreenState extends State<CommunityScreen> {
       if (postResult['success'] == true) {
         _posts = postResult['posts'] as List<Post>;
       }
-      if (userResult['success'] == true) {
-        _user = userResult['user'] as User;
-      }
+      _user = userResult;
       _isLoading = false;
     });
   }
 
   Future<void> _handleLike(int postId, int index) async {
+    final originalPost = _posts[index];
+    final wasLiked = originalPost.isLiked;
+    final currentLikes = originalPost.likesCount;
+
+    // Optimistic UI update
+    setState(() {
+      _posts[index] = originalPost.copyWith(
+        isLiked: !wasLiked,
+        likesCount: wasLiked ? currentLikes - 1 : currentLikes + 1,
+      );
+    });
+
     final result = await CommunityService.toggleLike(postId);
-    if (result['success'] == true) {
-      _loadPosts(); // Refresh data
+    
+    // Rollback if the API call fails
+    if (result['success'] != true) {
+      if (!mounted) return;
+      setState(() {
+        _posts[index] = originalPost;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Gagal menyukai post')),
+      );
     }
+  }
+
+  void _showComments(int postId, int index) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => FractionallySizedBox(
+        heightFactor: 0.85,
+        child: CommentBottomSheet(
+          postId: postId,
+          onCommentAdded: () {
+            // Optimistic update for comment count
+            setState(() {
+              final p = _posts[index];
+              _posts[index] = p.copyWith(commentsCount: p.commentsCount + 1);
+            });
+          },
+        ),
+      ),
+    );
   }
 
   String _formatTime(String? createdAt) {
@@ -89,7 +130,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                 backgroundImage: _user?.avatarUrl != null
                     ? (_user!.avatarUrl!.startsWith('http')
                         ? NetworkImage(_user!.avatarUrl!) as ImageProvider
-                        : FileImage(File(_user!.avatarUrl!)) as ImageProvider)
+                        : FileImage(File(_user!.avatarUrl!.replaceFirst('file://', ''))) as ImageProvider)
                     : null,
                 child: _user?.avatarUrl == null
                     ? const Icon(Icons.person, color: Colors.white, size: 20)
@@ -131,13 +172,23 @@ class _CommunityScreenState extends State<CommunityScreen> {
                     ),
                     ElevatedButton.icon(
                       onPressed: () async {
-                        final created = await Navigator.push<bool>(
+                        final dynamic createdPost = await Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (context) => const CreatePostScreen(),
                           ),
                         );
-                        if (created == true) _loadPosts();
+                        
+                        if (createdPost is Post) {
+                          // Optimistic Add Post
+                          setState(() {
+                            _posts.insert(0, createdPost);
+                          });
+                          // Refresh in background to sync with server
+                          _loadPosts();
+                        } else if (createdPost == true) {
+                          _loadPosts();
+                        }
                       },
                       icon: const Icon(Icons.edit, size: 16),
                       label: const Text(
@@ -156,11 +207,8 @@ class _CommunityScreenState extends State<CommunityScreen> {
                 ),
                 const SizedBox(height: 24),
                 if (_isLoading)
-                  const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(32.0),
-                      child: CircularProgressIndicator(color: AppTheme.primaryColor),
-                    ),
+                  Column(
+                    children: List.generate(3, (index) => const PostSkeleton()),
                   )
                 else if (_posts.isEmpty)
                   _buildStaticPosts()
@@ -231,127 +279,170 @@ class _CommunityScreenState extends State<CommunityScreen> {
     bool hasImage = false,
     String? imageUrl,
   }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
+    return Card(
+      margin: EdgeInsets.zero,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
+        side: BorderSide(color: Colors.grey.shade200, width: 1),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              CircleAvatar(
-                backgroundColor: Colors.grey.shade300,
-                child: const Icon(Icons.person, color: Colors.white),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      name,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                    Text(
-                      time,
-                      style: const TextStyle(color: Colors.grey, fontSize: 12),
-                    ),
-                  ],
+      shadowColor: Colors.black.withOpacity(0.04),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 20,
+                  backgroundColor: Colors.grey.shade200,
+                  child: const Icon(Icons.person, color: Colors.grey),
                 ),
-              ),
-              if (tag != null)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryLight,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    tag,
-                    style: const TextStyle(
-                      color: AppTheme.primaryColor,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(content),
-          if (hasImage) ...[
-            const SizedBox(height: 12),
-            Container(
-              height: 150,
-              decoration: BoxDecoration(
-                color: Colors.green.shade100,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: imageUrl != null
-                  ? ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.network(
-                        imageUrl,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => const Center(
-                          child: Icon(Icons.image, size: 48, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        name,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
                         ),
                       ),
-                    )
-                  : const Center(
-                      child: Icon(Icons.image, size: 48, color: Colors.white),
-                    ),
-            ),
-          ],
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              GestureDetector(
-                onTap: postId != null && index != null
-                    ? () => _handleLike(postId, index)
-                    : null,
-                child: Icon(
-                  isLiked ? Icons.favorite : Icons.favorite_border,
-                  color: isLiked ? Colors.red : AppTheme.primaryColor,
-                  size: 20,
+                      const SizedBox(height: 2),
+                      Text(
+                        time,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
+                if (tag != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryLight,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      tag,
+                      style: const TextStyle(
+                        color: AppTheme.primaryColor,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              content,
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                height: 1.5,
+                color: Colors.black87,
               ),
-              const SizedBox(width: 4),
-              Text(
-                '$likes',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(width: 16),
-              const Icon(
-                Icons.chat_bubble_outline,
-                color: Colors.grey,
-                size: 20,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                '$comments Komentar',
-                style: const TextStyle(color: Colors.grey),
+            ),
+            if (hasImage) ...[
+              const SizedBox(height: 16),
+              Container(
+                height: 180,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: imageUrl != null
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: imageUrl.startsWith('http')
+                            ? Image.network(
+                                imageUrl,
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => const Center(
+                                  child: Icon(Icons.image, size: 48, color: Colors.grey),
+                                ),
+                              )
+                            : Image.file(
+                                File(imageUrl.replaceFirst('file://', '')),
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => const Center(
+                                  child: Icon(Icons.image, size: 48, color: Colors.grey),
+                                ),
+                              ),
+                      )
+                    : const Center(
+                        child: Icon(Icons.image, size: 48, color: Colors.grey),
+                      ),
               ),
             ],
-          ),
-        ],
+            const SizedBox(height: 16),
+            const Divider(height: 1),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                InkWell(
+                  onTap: postId != null && index != null
+                      ? () => _handleLike(postId, index)
+                      : null,
+                  borderRadius: BorderRadius.circular(20),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    child: Row(
+                      children: [
+                        Icon(
+                          isLiked ? Icons.favorite : Icons.favorite_border,
+                          color: isLiked ? Colors.red : Colors.grey.shade600,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          '$likes',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: isLiked ? Colors.red : Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                InkWell(
+                  onTap: postId != null && index != null
+                      ? () => _showComments(postId, index)
+                      : null,
+                  borderRadius: BorderRadius.circular(20),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.chat_bubble_outline,
+                          color: Colors.grey.shade600,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          '$comments Komentar',
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
