@@ -2,6 +2,9 @@
 import '../theme.dart';
 import '../services/community_service.dart';
 
+import '../models/post.dart';
+import '../models/user.dart';
+import '../services/user_service.dart';
 class CreatePostScreen extends StatefulWidget {
   const CreatePostScreen({super.key});
 
@@ -11,7 +14,24 @@ class CreatePostScreen extends StatefulWidget {
 
 class _CreatePostScreenState extends State<CreatePostScreen> {
   final _contentController = TextEditingController();
+  User? _currentUser;
   bool _isPosting = false;
+  String _loadingText = 'Mengunggah...';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    final user = await UserService.getLocalProfile();
+    if (mounted) {
+      setState(() {
+        _currentUser = user;
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -29,7 +49,16 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       return;
     }
 
-    setState(() => _isPosting = true);
+    setState(() {
+      _isPosting = true;
+      _loadingText = 'Menyiapkan post...';
+    });
+
+    // Progress Illusion Simulation
+    await Future.delayed(const Duration(milliseconds: 600));
+    if (mounted) setState(() => _loadingText = 'Mengunggah konten...');
+    await Future.delayed(const Duration(milliseconds: 600));
+    if (mounted) setState(() => _loadingText = 'Menyelesaikan...');
 
     final result = await CommunityService.createPost(content);
 
@@ -37,7 +66,24 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     setState(() => _isPosting = false);
 
     if (result['success'] == true) {
-      Navigator.pop(context, true); // true = post berhasil dibuat
+      // Simulate success delay for visual completion
+      await Future.delayed(const Duration(milliseconds: 300));
+      if (!mounted) return;
+      
+      // Return the new post data to support optimistic UI on the caller side
+      // Since createPost doesn't return the full Post object, we can construct a local mock
+      // to pass back, which will be added to the feed immediately.
+      final newPostMock = Post(
+        id: DateTime.now().millisecondsSinceEpoch, // temporary ID
+        content: content,
+        authorName: _currentUser?.name ?? 'Pengguna Aura Health',
+        authorAvatar: _currentUser?.avatarUrl,
+        likesCount: 0,
+        commentsCount: 0,
+        isLiked: false,
+        createdAt: DateTime.now().toIso8601String(),
+      );
+      Navigator.pop(context, newPostMock);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(result['message'] ?? 'Gagal membuat post')),
@@ -93,12 +139,17 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               children: [
                 CircleAvatar(
                   backgroundColor: Colors.grey.shade300,
-                  child: const Icon(Icons.person, color: Colors.white),
+                  backgroundImage: _currentUser?.avatarUrl != null
+                      ? NetworkImage(_currentUser!.avatarUrl!)
+                      : null,
+                  child: _currentUser?.avatarUrl == null
+                      ? const Icon(Icons.person, color: Colors.white)
+                      : null,
                 ),
                 const SizedBox(width: 12),
-                const Text(
-                  'Pengguna Aura Health',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                Text(
+                  _currentUser?.name ?? 'Pengguna Aura Health',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
               ],
             ),
@@ -141,6 +192,24 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 ),
               ],
             ),
+            if (_isPosting) ...[
+              const SizedBox(height: 16),
+              LinearProgressIndicator(
+                backgroundColor: Colors.grey.shade200,
+                color: AppTheme.primaryColor,
+              ),
+              const SizedBox(height: 8),
+              Center(
+                child: Text(
+                  _loadingText,
+                  style: TextStyle(
+                    color: Colors.grey.shade600,
+                    fontSize: 14,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
