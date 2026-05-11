@@ -49,5 +49,4 @@ app.*.map.json
 .env*
 
 android/app/google-services.json
-android/app/google-services.json
 ios/Runner/GoogleService-Info.plistandroid/app/google-services.json
