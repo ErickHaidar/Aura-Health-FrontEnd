@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import '../../core/theme/app_theme.dart';
 import '../../services/auth_service.dart';
+import '../../services/user_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -18,17 +19,51 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _checkAuthAndNavigate() async {
-    // Tunggu minimal 2 detik agar splash screen terlihat
+    // Tampilkan splash minimal 2 detik
     await Future.delayed(const Duration(seconds: 2));
-
     if (!mounted) return;
 
-    final isLoggedIn = await AuthService.isLoggedIn();
+    final token = await AuthService.getToken();
 
-    if (!mounted) return;
+    // Tidak ada token sama sekali → langsung ke login
+    if (token == null) {
+      if (mounted) Navigator.pushReplacementNamed(context, '/login');
+      return;
+    }
 
-    // Arahkan sesuai status login tersimpan.
-    Navigator.pushReplacementNamed(context, isLoggedIn ? '/main' : '/login');
+    // Ada token → coba validasi ke server (ambil profil)
+    // Jika 401, coba refresh. Jika refresh gagal → login.
+    try {
+      final result = await UserService.getMyProfile();
+      if (!mounted) return;
+
+      if (result['success'] == true) {
+        // Token valid, profil tersimpan di cache → masuk app
+        Navigator.pushReplacementNamed(context, '/main');
+      } else {
+        // Profil gagal (token mungkin expired) → coba refresh
+        final refreshed = await AuthService.refreshToken();
+        if (!mounted) return;
+        if (refreshed) {
+          // Refresh berhasil → masuk app
+          Navigator.pushReplacementNamed(context, '/main');
+        } else {
+          // Refresh gagal → paksa login ulang
+          await AuthService.logout();
+          if (mounted) Navigator.pushReplacementNamed(context, '/login');
+        }
+      }
+    } catch (_) {
+      if (!mounted) return;
+      // Network error → kalau ada cache local, tetap masuk
+      final localUser = await UserService.getLocalProfile();
+      if (!mounted) return;
+      if (localUser != null) {
+        Navigator.pushReplacementNamed(context, '/main');
+      } else {
+        Navigator.pushReplacementNamed(context, '/login');
+      }
+    }
   }
 
   @override
@@ -61,9 +96,9 @@ class _SplashScreenState extends State<SplashScreen> {
             const SizedBox(height: 8),
             Text(
               'Bebas TBC, Hidup Lebih Sehat',
-              style: Theme.of(
-                context,
-              ).textTheme.bodyLarge?.copyWith(color: AppTheme.textDark),
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                color: AppTheme.textDark,
+              ),
             ),
             const SizedBox(height: 32),
             const CircularProgressIndicator(

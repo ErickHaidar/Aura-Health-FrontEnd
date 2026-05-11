@@ -77,9 +77,10 @@ class _CommunityScreenState extends State<CommunityScreen> {
 
   Future<void> _loadPosts() async {
     final postFuture = CommunityService.getPosts();
-    final userResult = await UserService.getLocalProfile();
+    final userFuture = UserService.getMyProfile();
 
     final postResult = await postFuture;
+    final userResult = await userFuture;
 
     if (!mounted) return;
 
@@ -87,7 +88,9 @@ class _CommunityScreenState extends State<CommunityScreen> {
       if (postResult['success'] == true) {
         _posts = postResult['posts'] as List<Post>;
       }
-      _user = userResult;
+      if (userResult['success'] == true) {
+        _user = userResult['user'] as User;
+      }
       _isLoading = false;
     });
   }
@@ -179,10 +182,22 @@ class _CommunityScreenState extends State<CommunityScreen> {
 
     final originalPost = _posts[index];
     setState(
-      () => _posts[index] = originalPost.copyWith(content: updatedContent),
+      () => _posts[index] = Post(
+        id: originalPost.id,
+        content: updatedContent,
+        imageUrl: originalPost.imageUrl,
+        authorName: originalPost.authorName,
+        authorAvatar: originalPost.authorAvatar,
+        likesCount: originalPost.likesCount,
+        commentsCount: originalPost.commentsCount,
+        isLiked: originalPost.isLiked,
+        isOwnPost: originalPost.isOwnPost,
+        isAnonymous: originalPost.isAnonymous,
+        createdAt: originalPost.createdAt,
+      ),
     );
 
-    final result = await CommunityService.updatePost(post.id, updatedContent);
+    final result = await CommunityService.updatePost(post.id, content: updatedContent);
     if (!mounted) return;
 
     if (result['success'] == true) {

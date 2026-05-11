@@ -27,15 +27,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _loadProfile() async {
     final result = await UserService.getMyProfile();
-
     if (!mounted) return;
-
     setState(() {
       if (result['success'] == true) {
         _user = result['user'] as User;
       }
       _isLoading = false;
     });
+  }
+
+  Future<void> _openEditProfile() async {
+    final updatedUser = await Navigator.push<User?>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EditProfileScreen(user: _user),
+      ),
+    );
+    // Jika edit screen return user baru, update langsung tanpa reload
+    if (updatedUser != null && mounted) {
+      setState(() => _user = updatedUser);
+    } else if (mounted) {
+      // Fallback: reload dari cache/server
+      _loadProfile();
+    }
   }
 
   Future<void> _handleLogout() async {
@@ -133,16 +147,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     _buildMenuOption(
                       Icons.person_outline,
                       'Ubah Profil',
-                      () async {
-                        await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                EditProfileScreen(user: _user),
-                          ),
-                        );
-                        _loadProfile(); // Refresh setelah edit
-                      },
+                      _openEditProfile,
                     ),
                     _buildMenuOption(Icons.settings_outlined, 'Pengaturan', () {
                       Navigator.push(

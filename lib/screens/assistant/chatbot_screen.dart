@@ -35,8 +35,8 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         UserService.getMyProfile(),
       ]);
 
-      final historyResult = results[0] as Map<String, dynamic>;
-      final userResult = results[1] as Map<String, dynamic>;
+      final historyResult = results[0];
+      final userResult = results[1];
 
       if (!mounted) return;
 

@@ -106,7 +106,7 @@ class _ArticleListScreenState extends State<ArticleListScreen> {
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => ArticleDetailScreen(articleId: article.id),
+        builder: (context) => ArticleDetailScreen(articleId: article.id.toString()),
       ),
     );
     if (mounted) _loadArticles(reset: true);

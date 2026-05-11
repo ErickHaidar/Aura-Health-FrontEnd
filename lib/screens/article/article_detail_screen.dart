@@ -61,9 +61,11 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
     setState(() => _isLiking = false);
 
     if (res['success'] == true) {
-      setState(() {
-        _article = res['article'] as Article;
-      });
+      if (res['article'] != null) {
+        setState(() {
+          _article = res['article'] as Article;
+        });
+      }
       final liked = res['liked'] as bool? ?? _article!.isLiked;
       messenger.showSnackBar(
         SnackBar(

@@ -195,7 +195,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             context,
                             MaterialPageRoute(
                               builder: (context) =>
-                                  ArticleDetailScreen(articleId: article.id),
+                                  ArticleDetailScreen(articleId: article.id.toString()),
                             ),
                           ),
                           child: _buildArticleCard(article),

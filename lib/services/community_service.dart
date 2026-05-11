@@ -8,9 +8,10 @@ class CommunityService {
   // ─── Feed semua post (publik) ───
   static Future<Map<String, dynamic>> getPosts({int page = 1, int limit = 10}) async {
     try {
+      final token = await AuthService.getToken();
       final response = await http.get(
         Uri.parse('${ApiConfig.baseUrl}/posts?page=$page&limit=$limit'),
-        headers: ApiConfig.headers(null),
+        headers: ApiConfig.headers(token),
       );
 
       final data = jsonDecode(response.body);
@@ -28,11 +29,12 @@ class CommunityService {
   }
 
   // ─── Detail post ───
-  static Future<Map<String, dynamic>> getPostDetail(int id) async {
+  static Future<Map<String, dynamic>> getPostDetail(String id) async {
     try {
+      final token = await AuthService.getToken();
       final response = await http.get(
         Uri.parse('${ApiConfig.baseUrl}/posts/$id'),
-        headers: ApiConfig.headers(null),
+        headers: ApiConfig.headers(token),
       );
 
       final data = jsonDecode(response.body);
@@ -48,7 +50,7 @@ class CommunityService {
   }
 
   // ─── Buat post (perlu auth, form-data) ───
-  static Future<Map<String, dynamic>> createPost(String content, {String? imagePath}) async {
+  static Future<Map<String, dynamic>> createPost(String content, {String? imagePath, bool isAnonymous = false}) async {
     try {
       final token = await AuthService.getToken();
       if (token == null) return {'success': false, 'message': 'Belum login'};
@@ -59,6 +61,7 @@ class CommunityService {
       );
       request.headers['Authorization'] = 'Bearer $token';
       request.fields['content'] = content;
+      if (isAnonymous) request.fields['isAnonymous'] = 'true';
 
       if (imagePath != null) {
         request.files.add(await http.MultipartFile.fromPath('image', imagePath));
@@ -79,7 +82,7 @@ class CommunityService {
   }
 
   // ─── Hapus post ───
-  static Future<Map<String, dynamic>> deletePost(int id) async {
+  static Future<Map<String, dynamic>> deletePost(String id) async {
     try {
       final response = await AuthService.authenticatedDelete(
         '${ApiConfig.baseUrl}/posts/$id',
@@ -98,7 +101,7 @@ class CommunityService {
   }
 
   // ─── Like / Unlike post ───
-  static Future<Map<String, dynamic>> toggleLike(int postId) async {
+  static Future<Map<String, dynamic>> toggleLike(String postId) async {
     try {
       final response = await AuthService.authenticatedPost(
         '${ApiConfig.baseUrl}/posts/$postId/like',
@@ -117,7 +120,7 @@ class CommunityService {
   }
 
   // ─── Ambil komentar post ───
-  static Future<Map<String, dynamic>> getComments(int postId, {int page = 1, int limit = 10}) async {
+  static Future<Map<String, dynamic>> getComments(String postId, {int page = 1, int limit = 10}) async {
     try {
       final response = await http.get(
         Uri.parse('${ApiConfig.baseUrl}/posts/$postId/comments?page=$page&limit=$limit'),
@@ -139,7 +142,7 @@ class CommunityService {
   }
 
   // ─── Tambah komentar ───
-  static Future<Map<String, dynamic>> addComment(int postId, String comment) async {
+  static Future<Map<String, dynamic>> addComment(String postId, String comment) async {
     try {
       final response = await AuthService.authenticatedPost(
         '${ApiConfig.baseUrl}/posts/$postId/comments',
@@ -159,7 +162,7 @@ class CommunityService {
   }
 
   // ─── Hapus komentar ───
-  static Future<Map<String, dynamic>> deleteComment(int postId, int commentId) async {
+  static Future<Map<String, dynamic>> deleteComment(String postId, String commentId) async {
     try {
       final response = await AuthService.authenticatedDelete(
         '${ApiConfig.baseUrl}/posts/$postId/comments/$commentId',
@@ -171,6 +174,63 @@ class CommunityService {
         return {'success': true, 'message': data['message'] ?? 'Komentar dihapus'};
       } else {
         return {'success': false, 'message': data['message'] ?? 'Gagal menghapus komentar'};
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Terjadi kesalahan jaringan: $e'};
+    }
+  }
+
+  // ─── Update post ───
+  static Future<Map<String, dynamic>> updatePost(String id, {String? content, String? imagePath}) async {
+    try {
+      final token = await AuthService.getToken();
+      if (token == null) return {'success': false, 'message': 'Belum login'};
+
+      final request = http.MultipartRequest(
+        'PUT',
+        Uri.parse('${ApiConfig.baseUrl}/posts/$id'),
+      );
+      request.headers['Authorization'] = 'Bearer $token';
+      if (content != null) request.fields['content'] = content;
+      if (imagePath != null) {
+        request.files.add(await http.MultipartFile.fromPath('image', imagePath));
+      }
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200 && data['success'] == true) {
+        return {
+          'success': true,
+          'post': data['data'] != null ? Post.fromJson(data['data']) : null,
+          'message': data['message'] ?? 'Post diperbarui',
+        };
+      } else {
+        return {'success': false, 'message': data['message'] ?? 'Gagal memperbarui post'};
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Terjadi kesalahan jaringan: $e'};
+    }
+  }
+
+  // ─── Like / Unlike komentar ───
+  static Future<Map<String, dynamic>> toggleCommentLike(String postId, String commentId) async {
+    try {
+      final response = await AuthService.authenticatedPost(
+        '${ApiConfig.baseUrl}/posts/$postId/comments/$commentId/like',
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200 && data['success'] == true) {
+        return {
+          'success': true,
+          'liked': data['data']?['liked'] ?? data['liked'] ?? false,
+          'likesCount': data['data']?['likesCount'] ?? 0,
+        };
+      } else {
+        return {'success': false, 'message': data['message'] ?? 'Gagal like/unlike komentar'};
       }
     } catch (e) {
       return {'success': false, 'message': 'Terjadi kesalahan jaringan: $e'};

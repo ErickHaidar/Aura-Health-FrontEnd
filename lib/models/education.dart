@@ -13,7 +13,7 @@ class EducationCategory {
 }
 
 class EducationContent {
-  final int id;
+  final String id;
   final String title;
   final String content;
   final String category;
@@ -29,7 +29,7 @@ class EducationContent {
 
   factory EducationContent.fromJson(Map<String, dynamic> json) {
     return EducationContent(
-      id: json['id'] ?? 0,
+      id: json['id']?.toString() ?? '',
       title: json['title'] ?? '',
       content: json['content'] ?? '',
       category: json['category'] ?? '',

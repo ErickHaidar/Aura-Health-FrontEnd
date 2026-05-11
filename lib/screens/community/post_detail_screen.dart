@@ -56,7 +56,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 
     _socket!
       ..on('comment_created', (data) {
-        if (data is Map && data['postId']?.toString() == _post.id) {
+          if (data is Map && data['postId']?.toString() == _post.id) {
           _loadData();
         }
       })
@@ -79,17 +79,19 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 
   Future<void> _loadData() async {
     final commentsFuture = CommunityService.getComments(_post.id);
-    final userFuture = UserService.getLocalProfile();
+    final userFuture = UserService.getMyProfile();
 
     final commentsResult = await commentsFuture;
-    final user = await userFuture;
+    final userResult = await userFuture;
 
     if (!mounted) return;
     setState(() {
       if (commentsResult['success'] == true) {
         _comments = commentsResult['comments'] as List<Comment>;
       }
-      _currentUser = user;
+      if (userResult['success'] == true) {
+        _currentUser = userResult['user'] as User;
+      }
       _isLoading = false;
     });
   }
@@ -201,7 +203,9 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final mediaQuery = MediaQuery.of(context);
+    final bottomInset = mediaQuery.viewInsets.bottom;
+    final safeBottom = bottomInset > 0 ? bottomInset : mediaQuery.padding.bottom;
     final isAnonymousDisplay = _post.isAnonymous && !_post.isOwnPost;
 
     return Scaffold(
@@ -418,7 +422,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
               left: 12,
               right: 12,
               top: 8,
-              bottom: 8 + bottomInset,
+              bottom: 8 + safeBottom,
             ),
             child: Row(
               children: [

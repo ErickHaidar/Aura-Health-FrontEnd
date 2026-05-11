@@ -153,18 +153,16 @@ class AuthService {
     }
   }
 
-  // ─── Ambil Access Token (dengan auto-refresh jika expired) ───
+  // ─── Ambil Access Token ───
   static Future<String?> getToken() async {
-    // final prefs = await SharedPreferences.getInstance();
-    // return prefs.getString(_keyAccessToken);
-    return "dummy_token_development";
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_keyAccessToken);
   }
 
   // ─── Cek apakah user sudah login ───
   static Future<bool> isLoggedIn() async {
-    // final token = await getToken();
-    // return token != null;
-    return true;
+    final token = await getToken();
+    return token != null;
   }
 
   // ─── Ambil data user tersimpan ───

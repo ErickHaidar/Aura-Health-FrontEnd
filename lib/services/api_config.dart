@@ -1,11 +1,13 @@
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ApiConfig {
   static String get baseUrl {
     // Mengambil URL dari .env, jika tidak ada pakai default
-    final envUrl = dotenv.get('API_URL', fallback: 'https://tobie-unpensioning-melia.ngrok-free.dev');
+    final envUrl = dotenv.get(
+      'API_URL',
+      fallback: 'https://flexible-selected-fish.ngrok-free.app',
+    );
     
     if (kIsWeb) return 'http://localhost:3000/api';
     return '$envUrl/api';

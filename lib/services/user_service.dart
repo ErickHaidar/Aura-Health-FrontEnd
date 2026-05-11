@@ -51,18 +51,9 @@ class UserService {
 
   // ─── Update profil ───
   static Future<Map<String, dynamic>> updateProfile({String? name, String? bio, String? avatarPath}) async {
-    try {
-      // Simpan ke local terlebih dahulu
-      final localUser = await getLocalProfile();
-      final updatedUser = User(
-        id: localUser?.id ?? 0,
-        name: name ?? localUser?.name ?? 'Pengguna Aura Health',
-        email: localUser?.email ?? 'pengguna@email.com',
-        bio: bio ?? localUser?.bio,
-        avatarUrl: avatarPath ?? localUser?.avatarUrl,
-      );
-      await saveLocalProfile(updatedUser);
+    final localUser = await getLocalProfile();
 
+    try {
       final body = <String, dynamic>{};
       if (name != null) body['name'] = name;
       if (bio != null) body['bio'] = bio;
@@ -75,14 +66,49 @@ class UserService {
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200 && data['success'] == true) {
-        return {'success': true, 'message': data['message'] ?? 'Profil diperbarui'};
+        // Refresh profil lengkap dari server (termasuk avatarUrl yang benar)
+        final freshResult = await getMyProfile();
+        return {
+          'success': true,
+          'message': data['message'] ?? 'Profil diperbarui',
+          'user': freshResult['user'],
+        };
       } else {
-        // Tetap kembalikan success jika local sudah terupdate (opsional, tapi user minta lokal dulu)
-        return {'success': true, 'message': 'Profil disimpan secara lokal'};
+        // Fallback: update lokal saja tanpa avatarUrl baru
+        if (localUser != null) {
+          final updatedUser = User(
+            id: localUser.id,
+            name: name ?? localUser.name,
+            email: localUser.email,
+            bio: bio ?? localUser.bio,
+            avatarUrl: localUser.avatarUrl, // jaga avatarUrl yang sudah ada
+          );
+          await saveLocalProfile(updatedUser);
+          return {
+            'success': true,
+            'message': 'Profil disimpan secara lokal',
+            'user': updatedUser,
+          };
+        }
+        return {'success': false, 'message': data['message'] ?? 'Gagal memperbarui profil'};
       }
     } catch (e) {
-      // Jika error network, kita anggap success karena sudah tersimpan di local
-      return {'success': true, 'message': 'Profil disimpan secara lokal (offline)'};
+      if (localUser != null) {
+        final updatedUser = User(
+          id: localUser.id,
+          name: name ?? localUser.name,
+          email: localUser.email,
+          bio: bio ?? localUser.bio,
+          avatarUrl: localUser.avatarUrl,
+        );
+        await saveLocalProfile(updatedUser);
+        return {
+          'success': true,
+          'message': 'Profil disimpan secara lokal (offline)',
+          'user': updatedUser,
+        };
+      }
+      return {'success': false, 'message': 'Terjadi kesalahan jaringan: $e'};
     }
   }
 
@@ -104,7 +130,28 @@ class UserService {
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200 && data['success'] == true) {
-        return {'success': true, 'message': data['message'] ?? 'Avatar diperbarui'};
+        // Simpan avatarUrl dari server ke local cache
+        final avatarUrl =
+            data['data']?['avatarUrl'] ??
+            data['data']?['avatar_url'] ??
+            data['avatarUrl'];
+        if (avatarUrl != null) {
+          final localUser = await getLocalProfile();
+          if (localUser != null) {
+            await saveLocalProfile(User(
+              id: localUser.id,
+              name: localUser.name,
+              email: localUser.email,
+              bio: localUser.bio,
+              avatarUrl: avatarUrl,
+            ));
+          }
+        }
+        return {
+          'success': true,
+          'message': data['message'] ?? 'Avatar diperbarui',
+          'avatarUrl': avatarUrl,
+        };
       } else {
         return {'success': false, 'message': data['message'] ?? 'Gagal upload avatar'};
       }
@@ -148,6 +195,16 @@ class UserService {
     final profileStr = prefs.getString(_profileKey);
     if (profileStr != null) {
       return User.fromJson(jsonDecode(profileStr));
+    }
+    final savedUser = await AuthService.getSavedUser();
+    final name = savedUser['name'];
+    final email = savedUser['email'];
+    if (name != null || email != null) {
+      return User(
+        id: '0',
+        name: name ?? 'Pengguna Aura Health',
+        email: email ?? '',
+      );
     }
     return null;
   }

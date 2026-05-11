@@ -27,9 +27,9 @@ class _EducationCategoryScreenState extends State<EducationCategoryScreen> {
   Future<void> _loadContent() async {
     // 1. Tampilkan cache secara instan
     final cached = await EducationService.getCachedContents(widget.title);
-    if (mounted && cached != null) {
+    if (mounted && cached['success'] == true) {
       setState(() {
-        _contents = cached;
+        _contents = cached['contents'] as List<EducationContent>;
         _isLoading = false;
       });
     }

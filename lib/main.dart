@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'theme.dart';
-import 'screens/splash_screen.dart';
-import 'screens/login_screen.dart';
-import 'screens/register_screen.dart';
-import 'screens/otp_screen.dart';
-import 'screens/main_screen.dart';
+import 'screens/auth/splash_screen.dart';
+import 'screens/auth/login_screen.dart';
+import 'screens/auth/register_screen.dart';
+import 'screens/auth/otp_screen.dart';
+import 'screens/main/main_screen.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'providers/theme_provider.dart';
@@ -29,7 +29,7 @@ class AuraHealthApp extends StatelessWidget {
             darkTheme: AppTheme.darkTheme,
             themeMode: themeProvider.themeMode,
             debugShowCheckedModeBanner: false,
-            initialRoute: '/main',
+            initialRoute: '/',
             routes: {
               '/': (context) => const SplashScreen(),
               '/login': (context) => const LoginScreen(),

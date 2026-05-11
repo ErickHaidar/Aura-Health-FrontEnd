@@ -77,39 +77,45 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Future<void> _handleSave() async {
     final name = _nameController.text.trim();
     if (name.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Nama tidak boleh kosong')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Nama tidak boleh kosong')),
+      );
       return;
     }
 
     setState(() => _isSaving = true);
 
+    // 1. Upload avatar dulu jika ada gambar baru
+    if (_imageFile != null) {
+      final avatarResult = await UserService.uploadAvatar(_imageFile!.path);
+      if (!mounted) return;
+      if (avatarResult['success'] != true) {
+        setState(() => _isSaving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(avatarResult['message'] ?? 'Gagal upload foto')),
+        );
+        return;
+      }
+    }
+
+    // 2. Update nama & bio
     final result = await UserService.updateProfile(
       name: name,
       bio: _bioController.text.trim(),
-      avatarPath: _imageFile?.path,
     );
-
-    if (_imageFile != null && result['success'] == true) {
-      await UserService.uploadAvatar(_imageFile!.path);
-    }
 
     if (!mounted) return;
     setState(() => _isSaving = false);
 
     if (result['success'] == true) {
-      Navigator.pop(context);
+      // Kembali ke profile screen dengan user terbaru
+      Navigator.pop(context, result['user']);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result['message'] ?? 'Profil berhasil diperbarui'),
-        ),
+        SnackBar(content: Text(result['message'] ?? 'Profil berhasil diperbarui')),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result['message'] ?? 'Gagal memperbarui profil'),
-        ),
+        SnackBar(content: Text(result['message'] ?? 'Gagal memperbarui profil')),
       );
     }
   }

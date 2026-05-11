@@ -40,12 +40,14 @@ class _EducationScreenState extends State<EducationScreen> {
 
   Future<void> _loadCategories() async {
     // 1. Tampilkan cache secara instan (agar tidak lemot)
-    final cachedCats = await EducationService.getCachedCategories();
+    final catResult = await EducationService.getCachedCategories();
     final cachedUser = await UserService.getLocalProfile();
 
-    if (mounted && (cachedCats != null || cachedUser != null)) {
+    if (mounted) {
       setState(() {
-        if (cachedCats != null) _categories = cachedCats;
+        if (catResult['success'] == true) {
+          _categories = catResult['categories'] as List<EducationCategory>;
+        }
         if (cachedUser != null) _user = cachedUser;
         _isLoading = false;
       });
@@ -55,14 +57,14 @@ class _EducationScreenState extends State<EducationScreen> {
     final catFuture = EducationService.getCategories();
     final userFuture = UserService.getMyProfile();
 
-    final catResult = await catFuture;
+    final freshCatResult = await catFuture;
     final userResult = await userFuture;
 
     if (!mounted) return;
 
     setState(() {
-      if (catResult['success'] == true) {
-        _categories = catResult['categories'] as List<EducationCategory>;
+      if (freshCatResult['success'] == true) {
+        _categories = freshCatResult['categories'] as List<EducationCategory>;
       }
       if (userResult['success'] == true) {
         _user = userResult['user'] as User;
@@ -241,7 +243,7 @@ class _EducationScreenState extends State<EducationScreen> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 5),
             ),

@@ -33,10 +33,12 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   }
 
   Future<void> _loadUserData() async {
-    final user = await UserService.getLocalProfile();
+    final result = await UserService.getMyProfile();
     if (mounted) {
       setState(() {
-        _currentUser = user;
+        if (result['success'] == true) {
+          _currentUser = result['user'] as User;
+        }
       });
     }
   }
@@ -100,14 +102,12 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     if (picked == null || !mounted) return;
 
     final file = File(picked.path);
-    final lowerPath = picked.path.toLowerCase();
-    final isJpeg = lowerPath.endsWith('.jpg') || lowerPath.endsWith('.jpeg');
     final size = await file.length();
 
-    if (!isJpeg || size > _maxImageBytes) {
+    if (size > _maxImageBytes) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Gunakan gambar JPEG maksimal 1 MB')),
+        const SnackBar(content: Text('Gunakan gambar maksimal 1 MB')),
       );
       return;
     }
