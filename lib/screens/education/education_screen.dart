@@ -86,7 +86,7 @@ class _EducationScreenState extends State<EducationScreen> {
     return SafeArea(
       child: Scaffold(
         appBar: AppBar(
-          leading: const Icon(Icons.arrow_back),
+          automaticallyImplyLeading: false,
           title: const Text(
             'Edukasi TBC',
             style: TextStyle(

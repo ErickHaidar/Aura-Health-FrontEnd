@@ -265,7 +265,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
     return SafeArea(
       child: Scaffold(
         appBar: AppBar(
-          leading: const Icon(Icons.arrow_back),
+          automaticallyImplyLeading: false,
           title: const Text(
             'Aura Health',
             style: TextStyle(

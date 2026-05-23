@@ -73,17 +73,9 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: AppTheme.primaryColor,
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: const Icon(
-                Icons.medical_services,
-                size: 64,
-                color: Colors.white,
-              ),
+            Image.asset(
+              'assets/images/logo_aura.png',
+              height: 160,
             ),
             const SizedBox(height: 24),
             Text(

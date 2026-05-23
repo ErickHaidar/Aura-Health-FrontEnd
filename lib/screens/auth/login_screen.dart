@@ -71,17 +71,9 @@ class _LoginScreenState extends State<LoginScreen> {
             children: [
               const SizedBox(height: 40),
               Center(
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryLight,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.medical_services,
-                    color: AppTheme.primaryColor,
-                    size: 32,
-                  ),
+                child: Image.asset(
+                  'assets/images/logo_aura.png',
+                  height: 120,
                 ),
               ),
               const SizedBox(height: 24),
