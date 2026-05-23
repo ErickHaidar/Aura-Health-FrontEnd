@@ -46,7 +46,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         }
 
         if (historyResult['success'] == true) {
-          final messages = historyResult['messages'] as List<ChatMessage>;
+          final messages = (historyResult['messages'] as List<ChatMessage>).reversed;
           for (final msg in messages) {
             _messages.add({
               'role': 'user',
