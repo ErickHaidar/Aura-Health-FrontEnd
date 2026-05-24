@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/education.dart';
 
@@ -82,6 +83,19 @@ class EducationDetailScreen extends StatelessWidget {
         .toList();
   }
 
+  Future<void> _openSource(BuildContext context) async {
+    final source = content.source;
+    if (source == null || source.isEmpty) return;
+
+    final uri = Uri.parse(source);
+    final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!opened && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sumber tidak dapat dibuka')),
+      );
+    }
+  }
+
   Widget _professionalSummary() {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -113,7 +127,32 @@ class EducationDetailScreen extends StatelessWidget {
             'Catatan',
             'Gunakan materi ini sebagai pendamping edukasi tenaga kesehatan.',
           ),
+          if (content.source != null && content.source!.isNotEmpty)
+            _infoRow('Sumber', content.source!),
         ],
+      ),
+    );
+  }
+
+  Widget _sourceButton(BuildContext context) {
+    if (content.source == null || content.source!.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: () => _openSource(context),
+        icon: const Icon(Icons.open_in_new),
+        label: const Text('Lihat Sumber'),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppTheme.primaryColor,
+          side: const BorderSide(color: AppTheme.primaryColor),
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
       ),
     );
   }
@@ -382,6 +421,8 @@ class EducationDetailScreen extends StatelessWidget {
             ),
             const SizedBox(height: 18),
             _professionalSummary(),
+            const SizedBox(height: 14),
+            _sourceButton(context),
             const SizedBox(height: 24),
             const Text(
               'Materi Lengkap',
