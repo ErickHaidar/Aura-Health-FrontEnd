@@ -1,11 +1,12 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
-import '../theme.dart';
-import '../services/education_service.dart';
-import '../models/education.dart';
+import '../../core/theme/app_theme.dart';
+import '../../services/education_service.dart';
+import '../../models/education.dart';
 import 'education_category_screen.dart';
-import '../services/user_service.dart';
-import '../models/user.dart';
+import '../../services/user_service.dart';
+import '../../models/user.dart';
 
 class EducationScreen extends StatefulWidget {
   const EducationScreen({super.key});
@@ -38,17 +39,32 @@ class _EducationScreenState extends State<EducationScreen> {
   }
 
   Future<void> _loadCategories() async {
+    // 1. Tampilkan cache secara instan (agar tidak lemot)
+    final catResult = await EducationService.getCachedCategories();
+    final cachedUser = await UserService.getLocalProfile();
+
+    if (mounted) {
+      setState(() {
+        if (catResult['success'] == true) {
+          _categories = catResult['categories'] as List<EducationCategory>;
+        }
+        if (cachedUser != null) _user = cachedUser;
+        _isLoading = false;
+      });
+    }
+
+    // 2. Ambil data terbaru di background (Background Sync)
     final catFuture = EducationService.getCategories();
     final userFuture = UserService.getMyProfile();
 
-    final catResult = await catFuture;
+    final freshCatResult = await catFuture;
     final userResult = await userFuture;
 
     if (!mounted) return;
 
     setState(() {
-      if (catResult['success'] == true) {
-        _categories = catResult['categories'] as List<EducationCategory>;
+      if (freshCatResult['success'] == true) {
+        _categories = freshCatResult['categories'] as List<EducationCategory>;
       }
       if (userResult['success'] == true) {
         _user = userResult['user'] as User;
@@ -70,9 +86,7 @@ class _EducationScreenState extends State<EducationScreen> {
     return SafeArea(
       child: Scaffold(
         appBar: AppBar(
-          backgroundColor: Colors.white,
-          elevation: 0,
-          leading: const Icon(Icons.arrow_back, color: AppTheme.primaryColor),
+          automaticallyImplyLeading: false,
           title: const Text(
             'Edukasi TBC',
             style: TextStyle(
@@ -87,8 +101,9 @@ class _EducationScreenState extends State<EducationScreen> {
                 backgroundColor: AppTheme.primaryColor,
                 backgroundImage: _user?.avatarUrl != null
                     ? (_user!.avatarUrl!.startsWith('http')
-                        ? NetworkImage(_user!.avatarUrl!) as ImageProvider
-                        : FileImage(File(_user!.avatarUrl!)) as ImageProvider)
+                          ? CachedNetworkImageProvider(_user!.avatarUrl!)
+                                as ImageProvider
+                          : FileImage(File(_user!.avatarUrl!)) as ImageProvider)
                     : null,
                 child: _user?.avatarUrl == null
                     ? const Icon(Icons.person, color: Colors.white, size: 20)
@@ -126,19 +141,25 @@ class _EducationScreenState extends State<EducationScreen> {
                 const Center(
                   child: Padding(
                     padding: EdgeInsets.all(32.0),
-                    child: CircularProgressIndicator(color: AppTheme.primaryColor),
+                    child: CircularProgressIndicator(
+                      color: AppTheme.primaryColor,
+                    ),
                   ),
                 )
               else if (_categories.isNotEmpty)
-                ..._categories.map((cat) => Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: _buildCategoryCard(
-                    context,
-                    icon: _getIconForCategory(cat.name),
-                    title: cat.name,
-                    description: cat.description ?? 'Pelajari lebih lanjut tentang ${cat.name}.',
+                ..._categories.map(
+                  (cat) => Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: _buildCategoryCard(
+                      context,
+                      icon: _getIconForCategory(cat.name),
+                      title: cat.name,
+                      description:
+                          cat.description ??
+                          'Pelajari lebih lanjut tentang ${cat.name}.',
+                    ),
                   ),
-                ))
+                )
               else
                 ..._buildStaticCategories(context),
               const SizedBox(height: 80),
@@ -184,14 +205,16 @@ class _EducationScreenState extends State<EducationScreen> {
         context,
         icon: Icons.record_voice_over,
         title: 'Etika Batuk',
-        description: 'Cara batuk yang benar agar tidak menularkan ke orang lain.',
+        description:
+            'Cara batuk yang benar agar tidak menularkan ke orang lain.',
       ),
       const SizedBox(height: 16),
       _buildCategoryCard(
         context,
         icon: Icons.restaurant,
         title: 'Nutrisi TBC',
-        description: 'Kebutuhan gizi bagi penderita TBC untuk mempercepat kesembuhan.',
+        description:
+            'Kebutuhan gizi bagi penderita TBC untuk mempercepat kesembuhan.',
       ),
     ];
   }
@@ -220,7 +243,7 @@ class _EducationScreenState extends State<EducationScreen> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 5),
             ),

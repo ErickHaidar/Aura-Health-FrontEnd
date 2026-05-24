@@ -1,0 +1,136 @@
+[33mcommit 393090c5bda380c76acad3c329a31353fdf549c7[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mrizqi0[m[33m, [m[1;31morigin/rizqi0[m[33m)[m
+Author:     fajar <kusmidahjjajaj@gmail.com>
+AuthorDate: Mon May 25 01:39:03 2026 +0700
+Commit:     fajar <kusmidahjjajaj@gmail.com>
+CommitDate: Mon May 25 01:39:03 2026 +0700
+
+    add somthing
+
+[33mcommit b532405503ad69f6ca859f2d950fcadb1eda6130[m
+Author:     fajar <kusmidahjjajaj@gmail.com>
+AuthorDate: Sat May 23 22:09:56 2026 +0700
+Commit:     fajar <kusmidahjjajaj@gmail.com>
+CommitDate: Mon May 25 00:10:37 2026 +0700
+
+    add somthing
+
+[33mcommit a3f2f9abe681b60cf7528e166fde5544db8f3371[m
+Author:     Erick <ericksekolah123@gmail.com>
+AuthorDate: Sat May 23 23:31:41 2026 +0700
+Commit:     Erick <ericksekolah123@gmail.com>
+CommitDate: Sat May 23 23:31:41 2026 +0700
+
+    perubahan logo, penghapusan arrow back di menu edukasi dan komunitas
+
+[33mcommit e6729ded7a6c154991dd7f5f6151ede953d372d2[m
+Author:     Sulistyo Fajar Pratama <81098183+skutanjir@users.noreply.github.com>
+AuthorDate: Mon May 11 19:19:45 2026 +0700
+Commit:     GitHub <noreply@github.com>
+CommitDate: Mon May 11 19:19:45 2026 +0700
+
+    Delete opencode.json
+
+[33mcommit 6490e0762273c1681b002185c70350e07f2db4cc[m
+Merge: 563efb3 7cdba5a
+Author:     fajar <kusmidahjjajaj@gmail.com>
+AuthorDate: Mon May 11 19:18:00 2026 +0700
+Commit:     fajar <kusmidahjjajaj@gmail.com>
+CommitDate: Mon May 11 19:18:00 2026 +0700
+
+    add somthing
+
+[33mcommit 563efb35e94cd742a2170c87303dd411bbb5974b[m
+Author:     fajar <kusmidahjjajaj@gmail.com>
+AuthorDate: Mon May 11 19:15:13 2026 +0700
+Commit:     fajar <kusmidahjjajaj@gmail.com>
+CommitDate: Mon May 11 19:15:13 2026 +0700
+
+    add google-services to gitignore
+
+[33mcommit 7cdba5a784c286b7a39c310f5052706359cc76ce[m
+Author:     Sulistyo Fajar Pratama <81098183+skutanjir@users.noreply.github.com>
+AuthorDate: Mon May 11 19:12:30 2026 +0700
+Commit:     GitHub <noreply@github.com>
+CommitDate: Mon May 11 19:12:30 2026 +0700
+
+    Delete android/app/google-services.json
+
+[33mcommit db66c27d48e9e8592ed14837d6d40fa762c026c5[m
+Author:     fajar <kusmidahjjajaj@gmail.com>
+AuthorDate: Mon May 11 19:11:06 2026 +0700
+Commit:     fajar <kusmidahjjajaj@gmail.com>
+CommitDate: Mon May 11 19:11:06 2026 +0700
+
+    add somthing
+
+[33mcommit 7e1c364fa8e5d6f039984583d29920bbf17f226c[m
+Author:     fajar <kusmidahjjajaj@gmail.com>
+AuthorDate: Mon May 11 18:18:14 2026 +0700
+Commit:     fajar <kusmidahjjajaj@gmail.com>
+CommitDate: Mon May 11 18:18:14 2026 +0700
+
+    add somthing
+
+[33mcommit 7b4b1e76706e14c3bbcdbc40d1b2d4ab443005ca[m
+Author:     RizWithYa <krizki990@gmail.com>
+AuthorDate: Fri May 1 23:40:46 2026 +0700
+Commit:     RizWithYa <krizki990@gmail.com>
+CommitDate: Fri May 1 23:40:46 2026 +0700
+
+    Add Education Material
+
+[33mcommit 0993e9041b8a529a87ebaacf10a0132f109c580b[m
+Author:     RizWithYa <krizki990@gmail.com>
+AuthorDate: Fri May 1 23:02:41 2026 +0700
+Commit:     RizWithYa <krizki990@gmail.com>
+CommitDate: Fri May 1 23:02:41 2026 +0700
+
+    Fix Profile and name (Using local for faster debug)
+
+[33mcommit d49d4c5e8ebd0f0848093487c1c4c797d20cd5f1[m
+Author:     RizWithYa <krizki990@gmail.com>
+AuthorDate: Thu Apr 30 23:03:31 2026 +0700
+Commit:     RizWithYa <krizki990@gmail.com>
+CommitDate: Thu Apr 30 23:03:31 2026 +0700
+
+    Bug on dark mode, edit profile done
+
+[33mcommit 89f32a6dc4737abd42cab733ae81dd3bc200aa16[m
+Author:     RizWithYa <krizki990@gmail.com>
+AuthorDate: Thu Apr 30 22:27:37 2026 +0700
+Commit:     RizWithYa <krizki990@gmail.com>
+CommitDate: Thu Apr 30 22:28:23 2026 +0700
+
+    Add materi Education
+
+[33mcommit 05a3fd5d5b6a461d64a899c14b0266ec2947a674[m
+Author:     Erick <ericksekolah123@gmail.com>
+AuthorDate: Sat Apr 25 12:50:00 2026 +0700
+Commit:     Erick <ericksekolah123@gmail.com>
+CommitDate: Sat Apr 25 12:50:00 2026 +0700
+
+    terbaru bisa login daftar doang
+
+[33mcommit 1677ebc5c6c599bcc7e8ae2ccbc37812c272d0f5[m
+Author:     Erick <ericksekolah123@gmail.com>
+AuthorDate: Sat Apr 25 12:48:48 2026 +0700
+Commit:     Erick <ericksekolah123@gmail.com>
+CommitDate: Sat Apr 25 12:48:48 2026 +0700
+
+    feat: setup VS Code tasks for Ngrok and disable OTP temporarily
+
+[33mcommit ed7d8f2b46a9152a1a3ac4cb5f4af2dd3b7fa017[m
+Author:     Erick <ericksekolah123@gmail.com>
+AuthorDate: Sat Apr 25 08:43:55 2026 +0700
+Commit:     Erick <ericksekolah123@gmail.com>
+CommitDate: Sat Apr 25 08:43:55 2026 +0700
+
+    Update README and fix initial push
+
+[33mcommit 24eb0704da859f59ba2f3ef702d9f886005b0e0d[m
+Author:     Erick <ericksekolah123@gmail.com>
+AuthorDate: Sat Apr 25 08:38:53 2026 +0700
+Commit:     Erick <ericksekolah123@gmail.com>
+CommitDate: Sat Apr 25 08:38:53 2026 +0700
+
+    FE awal

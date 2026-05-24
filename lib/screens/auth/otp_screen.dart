@@ -1,7 +1,7 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'dart:async';
-import '../theme.dart';
-import '../services/auth_service.dart';
+import '../../core/theme/app_theme.dart';
+import '../../services/auth_service.dart';
 
 class OtpScreen extends StatefulWidget {
   const OtpScreen({super.key});
@@ -54,9 +54,9 @@ class _OtpScreenState extends State<OtpScreen> {
     await AuthService.requestOtp(_email);
     if (!mounted) return;
     _startCountdown();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('OTP baru telah dikirim')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('OTP baru telah dikirim')));
   }
 
   Future<void> _handleVerify() async {
@@ -145,10 +145,7 @@ class _OtpScreenState extends State<OtpScreen> {
 
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: List.generate(
-                  6,
-                  (index) => _buildOtpInput(index),
-                ),
+                children: List.generate(6, (index) => _buildOtpInput(index)),
               ),
 
               const SizedBox(height: 32),
@@ -156,7 +153,7 @@ class _OtpScreenState extends State<OtpScreen> {
                   ? Text(
                       'Kirim ulang dalam $_countdown detik',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(color: AppTheme.primaryColor),
+                      style: const TextStyle(),
                     )
                   : TextButton(
                       onPressed: _handleResendOtp,
@@ -228,7 +225,7 @@ class _OtpScreenState extends State<OtpScreen> {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: AppTheme.primaryColor),
+            borderSide: const BorderSide(),
           ),
           filled: true,
           fillColor: Colors.white,

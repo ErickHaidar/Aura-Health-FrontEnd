@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../theme.dart';
+import '../../core/theme/app_theme.dart';
 import 'package:provider/provider.dart';
-import '../providers/theme_provider.dart';
+import '../../providers/theme_provider.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -11,17 +11,15 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  bool _isDarkMode = false;
+  final bool _isDarkMode = false;
   bool _notificationsEnabled = true;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppTheme.primaryColor),
+          icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
@@ -41,10 +39,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
             subtitle: const Text('Ganti tema aplikasi menjadi gelap'),
-            value: Provider.of<ThemeProvider>(context).themeMode == ThemeMode.dark,
+            value:
+                Provider.of<ThemeProvider>(context).themeMode == ThemeMode.dark,
             activeThumbColor: AppTheme.primaryColor,
             onChanged: (val) {
-              Provider.of<ThemeProvider>(context, listen: false).toggleTheme(val);
+              Provider.of<ThemeProvider>(
+                context,
+                listen: false,
+              ).toggleTheme(val);
             },
             secondary: const Icon(Icons.dark_mode_outlined),
           ),

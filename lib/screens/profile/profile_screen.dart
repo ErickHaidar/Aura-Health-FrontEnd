@@ -1,9 +1,10 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
-import '../theme.dart';
-import '../models/user.dart';
-import '../services/user_service.dart';
-import '../services/auth_service.dart';
+import '../../core/theme/app_theme.dart';
+import '../../models/user.dart';
+import '../../services/user_service.dart';
+import '../../services/auth_service.dart';
 import 'edit_profile_screen.dart';
 import 'settings_screen.dart';
 
@@ -26,9 +27,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _loadProfile() async {
     final result = await UserService.getMyProfile();
-
     if (!mounted) return;
-
     setState(() {
       if (result['success'] == true) {
         _user = result['user'] as User;
@@ -37,7 +36,45 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
   }
 
+  Future<void> _openEditProfile() async {
+    final updatedUser = await Navigator.push<User?>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EditProfileScreen(user: _user),
+      ),
+    );
+    // Jika edit screen return user baru, update langsung tanpa reload
+    if (updatedUser != null && mounted) {
+      setState(() => _user = updatedUser);
+    } else if (mounted) {
+      // Fallback: reload dari cache/server
+      _loadProfile();
+    }
+  }
+
   Future<void> _handleLogout() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Keluar'),
+        content: const Text('Apakah Anda yakin ingin keluar dari akun?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Tidak'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Ya, Keluar'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
     await AuthService.logout();
     if (!mounted) return;
     Navigator.pushReplacementNamed(context, '/login');
@@ -51,8 +88,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return SafeArea(
       child: Scaffold(
         appBar: AppBar(
-          backgroundColor: Colors.white,
-          elevation: 0,
           title: const Text(
             'Profil Saya',
             style: TextStyle(
@@ -63,7 +98,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           centerTitle: true,
         ),
         body: _isLoading
-            ? const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor))
+            ? const Center(child: CircularProgressIndicator())
             : SingleChildScrollView(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
@@ -74,17 +109,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       backgroundColor: AppTheme.primaryColor,
                       backgroundImage: _user?.avatarUrl != null
                           ? (_user!.avatarUrl!.startsWith('http')
-                              ? NetworkImage(_user!.avatarUrl!) as ImageProvider
-                              : FileImage(File(_user!.avatarUrl!)) as ImageProvider)
+                                ? CachedNetworkImageProvider(_user!.avatarUrl!)
+                                      as ImageProvider
+                                : FileImage(File(_user!.avatarUrl!))
+                                      as ImageProvider)
                           : null,
                       child: _user?.avatarUrl == null
-                          ? const Icon(Icons.person, size: 50, color: Colors.white)
+                          ? const Icon(
+                              Icons.person,
+                              size: 50,
+                              color: Colors.white,
+                            )
                           : null,
                     ),
                     const SizedBox(height: 16),
                     Text(
                       displayName,
-                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -100,15 +144,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ],
                     const SizedBox(height: 32),
-                    _buildMenuOption(Icons.person_outline, 'Ubah Profil', () async {
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => EditProfileScreen(user: _user),
-                        ),
-                      );
-                      _loadProfile(); // Refresh setelah edit
-                    }),
+                    _buildMenuOption(
+                      Icons.person_outline,
+                      'Ubah Profil',
+                      _openEditProfile,
+                    ),
                     _buildMenuOption(Icons.settings_outlined, 'Pengaturan', () {
                       Navigator.push(
                         context,
@@ -117,7 +157,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       );
                     }),
-                    _buildMenuOption(Icons.help_outline, 'Bantuan & FAQ', () {}),
+                    _buildMenuOption(
+                      Icons.help_outline,
+                      'Bantuan & FAQ',
+                      () {},
+                    ),
                     const SizedBox(height: 24),
                     ElevatedButton.icon(
                       onPressed: _handleLogout,
@@ -126,7 +170,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.red.shade50,
                         foregroundColor: Colors.red,
-                        elevation: 0,
                       ),
                     ),
                     const SizedBox(height: 80),
@@ -145,7 +188,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           color: AppTheme.primaryLight,
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Icon(icon, color: AppTheme.primaryColor),
+        child: Icon(icon),
       ),
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
       trailing: const Icon(Icons.chevron_right),
