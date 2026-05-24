@@ -194,8 +194,8 @@ Test yang tersedia saat ini berada di folder `test/`, termasuk pengujian untuk e
 | Nama | Peran |
 |---|---|
 | Erick Haidar | Front-End Developer |
-| Fajar | Backend Developer |
-| Rizki | Backend Developer |
+| Fajar | Front-End And Backend Developer |
+| Rizki | Front-End Developer |
 
 ## Catatan Pengembangan
 
