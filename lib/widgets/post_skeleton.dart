@@ -31,7 +31,7 @@ class _PostSkeletonState extends State<PostSkeleton>
   Widget _box({double width = double.infinity, double height = 14, double radius = 8}) {
     return AnimatedBuilder(
       animation: _animation,
-      builder: (_, __) => Opacity(
+      builder: (context, child) => Opacity(
         opacity: _animation.value,
         child: Container(
           width: width,

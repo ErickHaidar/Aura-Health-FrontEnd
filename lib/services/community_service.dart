@@ -106,14 +106,11 @@ class CommunityService {
       final response = await AuthService.authenticatedPost(
         '${ApiConfig.baseUrl}/posts/$postId/like',
       );
-
       final data = jsonDecode(response.body);
-
       if (response.statusCode == 200 && data['success'] == true) {
         return {'success': true, 'message': data['message'] ?? 'Berhasil'};
-      } else {
-        return {'success': false, 'message': data['message'] ?? 'Gagal like/unlike'};
       }
+      return {'success': false, 'message': data['message'] ?? 'Gagal'};
     } catch (e) {
       return {'success': false, 'message': 'Terjadi kesalahan jaringan: $e'};
     }
@@ -148,14 +145,11 @@ class CommunityService {
         '${ApiConfig.baseUrl}/posts/$postId/comments',
         body: {'comment': comment},
       );
-
       final data = jsonDecode(response.body);
-
-      if ((response.statusCode == 200 || response.statusCode == 201) && data['success'] == true) {
+      if (response.statusCode == 200 || response.statusCode == 201) {
         return {'success': true, 'message': data['message'] ?? 'Komentar ditambahkan'};
-      } else {
-        return {'success': false, 'message': data['message'] ?? 'Gagal menambah komentar'};
       }
+      return {'success': false, 'message': data['message'] ?? 'Gagal menambah komentar'};
     } catch (e) {
       return {'success': false, 'message': 'Terjadi kesalahan jaringan: $e'};
     }

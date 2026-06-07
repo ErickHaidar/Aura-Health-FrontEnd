@@ -42,19 +42,39 @@ class Post {
     );
   }
 
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'content': content,
+      'imageUrl': imageUrl,
+      'authorName': authorName,
+      'authorAvatar': authorAvatar,
+      'likesCount': likesCount,
+      'commentsCount': commentsCount,
+      'isLiked': isLiked,
+      'isOwnPost': isOwnPost,
+      'isAnonymous': isAnonymous,
+      'createdAt': createdAt,
+    };
+  }
+
   Post copyWith({
+    String? id,
+    String? content,
+    String? imageUrl,
+    String? authorName,
+    String? authorAvatar,
     int? likesCount,
     int? commentsCount,
     bool? isLiked,
     bool? isOwnPost,
     bool? isAnonymous,
-    String? authorName,
-    String? authorAvatar,
+    String? createdAt,
   }) {
     return Post(
-      id: id,
-      content: content,
-      imageUrl: imageUrl,
+      id: id ?? this.id,
+      content: content ?? this.content,
+      imageUrl: imageUrl ?? this.imageUrl,
       authorName: authorName ?? this.authorName,
       authorAvatar: authorAvatar ?? this.authorAvatar,
       likesCount: likesCount ?? this.likesCount,
@@ -62,7 +82,7 @@ class Post {
       isLiked: isLiked ?? this.isLiked,
       isOwnPost: isOwnPost ?? this.isOwnPost,
       isAnonymous: isAnonymous ?? this.isAnonymous,
-      createdAt: createdAt,
+      createdAt: createdAt ?? this.createdAt,
     );
   }
 }
@@ -99,18 +119,35 @@ class Comment {
     );
   }
 
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'comment': comment,
+      'authorName': authorName,
+      'authorAvatar': authorAvatar,
+      'isLiked': isLiked,
+      'likesCount': likesCount,
+      'createdAt': createdAt,
+    };
+  }
+
   Comment copyWith({
+    String? id,
+    String? comment,
+    String? authorName,
+    String? authorAvatar,
     bool? isLiked,
     int? likesCount,
+    String? createdAt,
   }) {
     return Comment(
-      id: id,
-      comment: comment,
-      authorName: authorName,
-      authorAvatar: authorAvatar,
+      id: id ?? this.id,
+      comment: comment ?? this.comment,
+      authorName: authorName ?? this.authorName,
+      authorAvatar: authorAvatar ?? this.authorAvatar,
       isLiked: isLiked ?? this.isLiked,
       likesCount: likesCount ?? this.likesCount,
-      createdAt: createdAt,
+      createdAt: createdAt ?? this.createdAt,
     );
   }
 }

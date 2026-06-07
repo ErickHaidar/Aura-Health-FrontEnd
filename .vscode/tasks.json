@@ -1,17 +1,132 @@
 {
-  "version": "2.0.0",
-  "tasks": [
-    {
-      "label": "Run Ngrok (Port 3000)",
-      "type": "shell",
-      "command": "ngrok http 3000",
-      "isBackground": true,
-      "presentation": {
-        "reveal": "always",
-        "panel": "new",
-        "group": "backend"
-      },
-      "problemMatcher": []
-    }
-  ]
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "0. Setup Database (run once)",
+            "type": "shell",
+            "command": "python create_db.py",
+            "options": {
+                "cwd": "${workspaceFolder}/backend"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "new",
+                "group": "backend"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "1. Start Redis",
+            "type": "shell",
+            "command": "cmd /d /c \"taskkill /F /IM redis-server.exe 2>nul & timeout /t 1 /nobreak > nul & redis-server\"",
+            "isBackground": true,
+            "presentation": {
+                "reveal": "always",
+                "panel": "new",
+                "group": "backend"
+            },
+            "problemMatcher": {
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": ".*",
+                    "endsPattern": "Ready to accept connections"
+                },
+                "pattern": {
+                    "regexp": "."
+                }
+            }
+        },
+        {
+            "label": "2. Start Celery Worker",
+            "type": "shell",
+            "command": "celery -A app.tasks.celery_app worker --loglevel=info --pool=solo",
+            "options": {
+                "cwd": "${workspaceFolder}/backend"
+            },
+            "isBackground": true,
+            "dependsOn": [
+                "1. Start Redis"
+            ],
+            "presentation": {
+                "reveal": "always",
+                "panel": "new",
+                "group": "backend"
+            },
+            "problemMatcher": {
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": ".*",
+                    "endsPattern": "ready"
+                },
+                "pattern": {
+                    "regexp": "."
+                }
+            }
+        },
+        {
+            "label": "3. Start Uvicorn Backend",
+            "type": "shell",
+            "command": "python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload",
+            "options": {
+                "cwd": "${workspaceFolder}/backend"
+            },
+            "isBackground": true,
+            "dependsOn": [
+                "2. Start Celery Worker"
+            ],
+            "presentation": {
+                "reveal": "always",
+                "panel": "new",
+                "group": "backend"
+            },
+            "problemMatcher": {
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": ".*",
+                    "endsPattern": "Application startup complete"
+                },
+                "pattern": {
+                    "regexp": "."
+                }
+            }
+        },
+        {
+            "label": "4. Start Ngrok",
+            "type": "shell",
+            "command": "ngrok http 8000 --domain=newly-crisp-oriole.ngrok-free.app",
+            "isBackground": true,
+            "dependsOn": [
+                "3. Start Uvicorn Backend"
+            ],
+            "presentation": {
+                "reveal": "always",
+                "panel": "new",
+                "group": "backend"
+            },
+            "problemMatcher": {
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": ".*",
+                    "endsPattern": "started tunnel"
+                },
+                "pattern": {
+                    "regexp": "."
+                }
+            }
+        },
+        {
+            "label": "🚀 Run All Services",
+            "dependsOn": [
+                "4. Start Ngrok"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        }
+    ]
 }

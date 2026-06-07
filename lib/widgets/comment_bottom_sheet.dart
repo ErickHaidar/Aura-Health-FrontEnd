@@ -140,7 +140,7 @@ class _CommentBottomSheetState extends State<CommentBottomSheet> {
                           controller: _scrollController,
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           itemCount: _comments.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: 12),
+                          separatorBuilder: (context, index) => const SizedBox(height: 12),
                           itemBuilder: (ctx, i) => _buildCommentTile(_comments[i]),
                         ),
             ),

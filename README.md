@@ -1,69 +1,89 @@
-# Aura Health Frontend
+# 🩺 Aura Health: Platform Digital Edukasi dan Komunitas TBC (Frontend)
 
-Aura Health adalah aplikasi frontend berbasis Flutter untuk layanan edukasi dan pendampingan informasi TBC. Aplikasi ini menyediakan antarmuka untuk autentikasi pengguna, dashboard kesehatan, konten edukasi, alur deteksi, komunitas, chatbot AI, profil, dan pengaturan aplikasi.
+## Pendahuluan
 
-Frontend ini terhubung dengan backend Aura Health melalui REST API dan Socket.IO. Konfigurasi alamat backend dibaca dari file `.env` menggunakan variabel `API_URL`.
+Aura Health adalah aplikasi mobile berbasis Flutter yang dirancang untuk mendukung upaya edukasi dan penanggulangan penyakit Tuberkulosis (TBC). Platform ini menyediakan akses cepat terhadap informasi medis, panduan deteksi mandiri, serta ruang komunitas bagi pengguna untuk saling berbagi pengalaman.
 
-## Ringkasan Proyek
+Proyek ini dikembangkan untuk memenuhi tugas mata kuliah **Workshop Pemrograman Perangkat Bergerak**.
 
-| Item | Keterangan |
-|---|---|
-| Nama aplikasi | Aura Health |
-| Package | `aurahealth` |
-| Platform utama | Mobile dengan Flutter |
-| Bahasa | Dart |
-| Framework | Flutter |
-| State management | `provider` |
-| Konfigurasi environment | `flutter_dotenv` |
-| Komunikasi API | `http` |
-| Realtime | `socket_io_client` |
-| Penyimpanan lokal | `shared_preferences` |
-| Dokumentasi API | `API_DOCS.md` |
+## Tim Pengembang
 
-## Fitur Frontend
+| Nama | Peran |
+| :--- | :--- |
+| **Erick Haidar** | Front-End Developer |
+| **Fajar** | Front-End & Backend Developer |
+| **Rizqi** | Backend Developer |
 
-| Modul | Deskripsi | Layar Terkait |
-|---|---|---|
-| Splash Screen | Menampilkan halaman awal dan memeriksa status pengguna sebelum masuk ke aplikasi. | `lib/screens/auth/splash_screen.dart` |
-| Autentikasi | Menyediakan login, registrasi, dan verifikasi OTP. | `lib/screens/auth/` |
-| Dashboard | Menampilkan ringkasan layanan, sapaan pengguna, dan artikel terbaru. | `lib/screens/main/home_screen.dart` |
-| Edukasi TBC | Menyediakan daftar edukasi, kategori edukasi, dan detail konten edukasi. | `lib/screens/education/` |
-| Artikel | Menampilkan daftar artikel dan detail artikel kesehatan. | `lib/screens/article/` |
-| Alur Deteksi | Menampilkan panduan alur deteksi TBC dan informasi pendukung. | `lib/screens/detection/detection_flow_screen.dart` |
-| Komunitas | Menyediakan feed komunitas, detail postingan, komentar, like, dan pembuatan postingan. | `lib/screens/community/` |
-| Chatbot AI | Menyediakan ruang percakapan dengan chatbot untuk topik TBC. | `lib/screens/assistant/chatbot_screen.dart` |
-| Profil | Menampilkan profil pengguna dan pengubahan data profil. | `lib/screens/profile/` |
-| Pengaturan | Menyediakan pengaturan aplikasi, termasuk mode tema. | `lib/screens/profile/settings_screen.dart` |
+## Fitur Unggulan
 
-## Teknologi dan Dependensi
+Aplikasi ini mengintegrasikan berbagai modul penting untuk memberikan layanan kesehatan yang menyeluruh:
 
-| Dependensi | Fungsi |
-|---|---|
-| `flutter` | Framework utama untuk membangun aplikasi multiplatform. |
-| `cupertino_icons` | Ikon bergaya iOS untuk komponen tertentu. |
-| `google_fonts` | Penggunaan font dari Google Fonts. |
-| `font_awesome_flutter` | Ikon tambahan dari Font Awesome. |
-| `http` | Komunikasi REST API dengan backend. |
-| `shared_preferences` | Penyimpanan data sederhana secara lokal. |
-| `flutter_dotenv` | Membaca konfigurasi dari file `.env`. |
-| `provider` | Pengelolaan state aplikasi, termasuk tema. |
-| `image_picker` | Pengambilan gambar dari perangkat. |
-| `cached_network_image` | Menampilkan dan menyimpan cache gambar dari jaringan. |
-| `url_launcher` | Membuka URL atau aplikasi eksternal dari Flutter. |
-| `socket_io_client` | Komunikasi realtime berbasis Socket.IO. |
-| `google_maps_flutter` | Integrasi peta Google Maps. |
+- **Sistem Autentikasi**: Mendukung pendaftaran dan masuk akun dengan verifikasi OTP untuk memastikan validitas data pengguna.
+- **Dashboard Terintegrasi**: Halaman utama yang menampilkan ringkasan layanan, artikel kesehatan terbaru, dan sapaan personal.
+- **Modul Edukasi**: Katalog informasi terstruktur mengenai gejala, metode pencegahan, hingga panduan konsumsi obat OAT.
+- **Alur Deteksi & Faskes**: Informasi lokasi fasilitas kesehatan terdekat beserta langkah-langkah deteksi dini yang akurat.
+- **Forum Komunitas**: Ruang interaksi bagi pengguna untuk berdiskusi, memberikan dukungan, dan mempublikasikan konten terkait pemulihan TBC.
+- **Asisten AI (Aura Assistant)**: Chatbot cerdas yang mampu menjawab pertanyaan seputar TBC secara instan melalui antarmuka percakapan yang interaktif.
+- **Pengaturan Akun & UI**: Personalisasi profil pengguna dan konfigurasi tampilan aplikasi termasuk dukungan Mode Gelap.
 
-## Kebutuhan Sistem
+## Arsitektur Teknologi
 
-| Kebutuhan | Rekomendasi |
-|---|---|
-| Flutter SDK | Mengikuti versi yang mendukung Dart SDK `^3.11.0` |
-| Dart SDK | `^3.11.0` sesuai `pubspec.yaml` |
-| IDE | Visual Studio Code atau Android Studio |
-| Android tooling | Android Studio, Android SDK, dan emulator atau perangkat fisik |
-| iOS tooling | Xcode dan CocoaPods jika menjalankan target iOS |
-| Backend | Backend Aura Health berjalan dan dapat diakses oleh aplikasi |
-| Environment file | File `.env` tersedia di root folder frontend |
+| Komponen | Spesifikasi |
+| :--- | :--- |
+| **Framework** | [Flutter](https://flutter.dev/) |
+| **Bahasa Pemrograman** | Dart |
+| **State Management** | Provider |
+| **Komunikasi API** | Http Client |
+| **Penyimpanan Lokal** | Shared Preferences |
+| **Tipografi** | Inter (via Google Fonts) |
+| **Ikonografi** | Font Awesome & Material Icons |
+
+## Instalasi dan Menjalankan Aplikasi
+
+### Prasyarat
+
+- **Flutter SDK**: Versi terbaru pada channel stable.
+- **IDE**: Visual Studio Code atau Android Studio dengan ekstensi Flutter terpasang.
+- **Emulator/Perangkat**: Android atau iOS dengan fitur USB Debugging aktif.
+- **Backend**: Backend Aura Health berjalan dan dapat diakses oleh aplikasi.
+
+### Langkah-langkah
+
+1. Masuk ke direktori proyek:
+   ```bash
+   cd Aura-Health-FrontEnd
+   ```
+
+2. Instal semua dependensi yang diperlukan:
+   ```bash
+   flutter pub get
+   ```
+
+3. Konfigurasi Environment:
+   Buat file `.env` di root folder frontend (jika belum ada) dan sesuaikan variabel `API_URL` dengan alamat server backend Anda.
+   
+   *Contoh isi file `.env`:*
+   ```env
+   API_URL=http://localhost:3000
+   ```
+
+   | Target | Contoh `API_URL` | Catatan |
+   |---|---|---|
+   | Flutter Web lokal | `http://localhost:3000` | Web dapat mengakses backend lokal melalui browser. |
+   | Android Emulator | `http://10.0.2.2:3000` | `10.0.2.2` mengarah ke host machine dari emulator Android. |
+   | Perangkat fisik | `http://192.168.1.10:3000` | Gunakan IP lokal komputer yang menjalankan backend. |
+   | Tunnel publik | `https://nama-tunnel.ngrok-free.app` | Digunakan jika perangkat membutuhkan akses melalui internet (misal Ngrok). |
+
+4. Jalankan aplikasi Flutter:
+   ```bash
+   flutter run
+   ```
+   
+   Jika terdapat beberapa device, pilih target dengan melihat daftar device terlebih dahulu:
+   ```bash
+   flutter devices
+   flutter run -d <device-id>
+   ```
 
 ## Struktur Folder
 
@@ -81,74 +101,6 @@ Frontend ini terhubung dengan backend Aura Health melalui REST API dan Socket.IO
 | `lib/data/` | Data statis yang digunakan aplikasi. |
 | `assets/images/` | Aset gambar aplikasi. |
 | `test/` | Unit test dan widget test. |
-| `web/` | Konfigurasi dan aset untuk target web. |
-| `android/`, `ios/`, `linux/`, `macos/`, `windows/` | Konfigurasi platform Flutter. |
-
-## Konfigurasi Environment
-
-Aplikasi membaca konfigurasi backend dari file `.env` di root folder frontend. File tersebut harus tersedia karena `lib/main.dart` memuat environment dengan `dotenv.load(fileName: ".env")`.
-
-Contoh isi file `.env`:
-
-```env
-API_URL=http://localhost:3000
-```
-
-Untuk perangkat fisik atau emulator yang tidak dapat mengakses `localhost` komputer secara langsung, gunakan URL yang dapat dijangkau perangkat, misalnya alamat IP lokal komputer atau URL tunnel seperti Ngrok.
-
-| Target | Contoh `API_URL` | Catatan |
-|---|---|---|
-| Flutter Web lokal | `http://localhost:3000` | Web dapat mengakses backend lokal melalui browser. |
-| Android Emulator | `http://10.0.2.2:3000` | `10.0.2.2` mengarah ke host machine dari emulator Android. |
-| Perangkat fisik | `http://192.168.1.10:3000` | Gunakan IP lokal komputer yang menjalankan backend. |
-| Tunnel publik | `https://nama-tunnel.ngrok-free.app` | Digunakan jika perangkat membutuhkan akses melalui internet. |
-
-## Instalasi dan Menjalankan Aplikasi
-
-1. Masuk ke folder frontend.
-
-```bash
-cd frontend
-```
-
-2. Ambil seluruh dependensi Flutter.
-
-```bash
-flutter pub get
-```
-
-3. Pastikan file `.env` tersedia dan berisi `API_URL` yang benar.
-
-```env
-API_URL=http://localhost:3000
-```
-
-4. Jalankan backend Aura Health sesuai dokumentasi backend, lalu pastikan endpoint API dapat diakses.
-
-5. Jalankan aplikasi Flutter.
-
-```bash
-flutter run
-```
-
-Jika terdapat beberapa device, pilih target dengan melihat daftar device terlebih dahulu.
-
-```bash
-flutter devices
-flutter run -d <device-id>
-```
-
-## Perintah Pengembangan
-
-| Perintah | Fungsi |
-|---|---|
-| `flutter pub get` | Mengunduh dependensi proyek. |
-| `flutter run` | Menjalankan aplikasi pada device aktif. |
-| `flutter devices` | Menampilkan daftar device yang tersedia. |
-| `flutter analyze` | Memeriksa kualitas kode dan potensi masalah statis. |
-| `flutter test` | Menjalankan test pada folder `test/`. |
-| `flutter clean` | Membersihkan file build sementara. |
-| `flutter pub outdated` | Memeriksa dependensi yang memiliki versi lebih baru. |
 
 ## Integrasi Backend
 
@@ -164,38 +116,17 @@ Dokumentasi endpoint backend tersedia di `API_DOCS.md`. Secara umum, frontend me
 | Chatbot AI | `/api/chat` | Kirim pesan, riwayat chat, dan hapus riwayat. |
 | Notifications | `/api/notifications` | Daftar notifikasi dan status baca. |
 
-Header request default mencakup `Content-Type`, `Accept`, dan `ngrok-skip-browser-warning`. Jika token tersedia, request juga menyertakan header `Authorization: Bearer <token>`.
+## Perintah Pengembangan
 
-## Routing Aplikasi
-
-Route utama didefinisikan di `lib/main.dart` melalui `MaterialApp`.
-
-| Route | Halaman |
+| Perintah | Fungsi |
 |---|---|
-| `/` | Splash Screen |
-| `/login` | Login Screen |
-| `/register` | Register Screen |
-| `/otp` | OTP Screen |
-| `/main` | Main Screen |
-
-## Testing dan Validasi
-
-Gunakan perintah berikut sebelum menyerahkan perubahan kode frontend.
-
-```bash
-flutter analyze
-flutter test
-```
-
-Test yang tersedia saat ini berada di folder `test/`, termasuk pengujian untuk edit profil dan theme provider.
-
-## Tim Pengembang
-
-| Nama | Peran |
-|---|---|
-| Erick Haidar | Front-End Developer |
-| Fajar | Front-End And Backend Developer |
-| Rizki | Front-End Developer |
+| `flutter pub get` | Mengunduh dependensi proyek. |
+| `flutter run` | Menjalankan aplikasi pada device aktif. |
+| `flutter devices` | Menampilkan daftar device yang tersedia. |
+| `flutter analyze` | Memeriksa kualitas kode dan potensi masalah statis. |
+| `flutter test` | Menjalankan test pada folder `test/`. |
+| `flutter clean` | Membersihkan file build sementara. |
+| `flutter pub outdated` | Memeriksa dependensi yang memiliki versi lebih baru. |
 
 ## Catatan Pengembangan
 
