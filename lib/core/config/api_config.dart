@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ApiConfig {
@@ -8,9 +7,15 @@ class ApiConfig {
       'API_URL',
       fallback: 'https://flexible-selected-fish.ngrok-free.app',
     );
-    
-    if (kIsWeb) return 'http://localhost:3000/api';
+
     return '$envUrl/api';
+  }
+
+  static String get socketUrl {
+    return dotenv.get(
+      'API_URL',
+      fallback: 'https://flexible-selected-fish.ngrok-free.app',
+    );
   }
 
   // Helper untuk Headers

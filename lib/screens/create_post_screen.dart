@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../theme.dart';
 import '../services/community_service.dart';
 
@@ -74,7 +74,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       // Since createPost doesn't return the full Post object, we can construct a local mock
       // to pass back, which will be added to the feed immediately.
       final newPostMock = Post(
-        id: DateTime.now().millisecondsSinceEpoch, // temporary ID
+        id: DateTime.now().millisecondsSinceEpoch.toString(), // temporary ID
         content: content,
         authorName: _currentUser?.name ?? 'Pengguna Aura Health',
         authorAvatar: _currentUser?.avatarUrl,

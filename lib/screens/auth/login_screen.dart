@@ -1,6 +1,6 @@
-﻿import 'package:flutter/material.dart';
-import '../theme.dart';
-import '../services/auth_service.dart';
+import 'package:flutter/material.dart';
+import '../../core/theme/app_theme.dart';
+import '../../services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -14,6 +14,10 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   bool _isLoading = false;
   bool _obscurePassword = true;
+
+  bool _isValidEmail(String email) {
+    return RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email);
+  }
 
   @override
   void dispose() {
@@ -30,6 +34,13 @@ class _LoginScreenState extends State<LoginScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Email dan password harus diisi')),
       );
+      return;
+    }
+
+    if (!_isValidEmail(email)) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Format email tidak valid')));
       return;
     }
 
@@ -53,24 +64,16 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 40),
               Center(
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryLight,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.medical_services,
-                    color: AppTheme.primaryColor,
-                    size: 32,
-                  ),
+                child: Image.asset(
+                  'assets/images/logo_aura.png',
+                  height: 120,
                 ),
               ),
               const SizedBox(height: 24),
@@ -111,10 +114,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   TextButton(
                     onPressed: () {},
-                    child: const Text(
-                      'Lupa Password?',
-                      style: TextStyle(color: AppTheme.primaryColor),
-                    ),
+                    child: const Text('Lupa Password?', style: TextStyle()),
                   ),
                 ],
               ),
@@ -150,7 +150,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       )
                     : const Text('Masuk'),
               ),
-              const Spacer(),
+              const SizedBox(height: 48),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [

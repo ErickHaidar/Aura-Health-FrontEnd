@@ -1,6 +1,6 @@
-﻿import 'package:flutter/material.dart';
-import '../theme.dart';
-import '../services/auth_service.dart';
+import 'package:flutter/material.dart';
+import '../../core/theme/app_theme.dart';
+import '../../services/auth_service.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -17,6 +17,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _agreedToTerms = false;
   bool _obscurePassword = true;
 
+  bool _isValidEmail(String email) {
+    return RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email);
+  }
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -31,15 +35,54 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final password = _passwordController.text.trim();
 
     if (name.isEmpty || email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Semua field harus diisi')));
+      return;
+    }
+
+    if (name.length < 2) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Nama minimal 2 karakter')));
+      return;
+    }
+
+    if (!_isValidEmail(email)) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Format email tidak valid')));
+      return;
+    }
+
+    if (password.length < 8) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Semua field harus diisi')),
+        const SnackBar(content: Text('Password minimal 8 karakter')),
+      );
+      return;
+    }
+
+    if (!RegExp(r'[A-Z]').hasMatch(password)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Password harus mengandung huruf kapital'),
+        ),
+      );
+      return;
+    }
+
+    if (!RegExp(r'[0-9]').hasMatch(password)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Password harus mengandung angka')),
       );
       return;
     }
 
     if (!_agreedToTerms) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Anda harus menyetujui Syarat dan Ketentuan')),
+        const SnackBar(
+          content: Text('Anda harus menyetujui Syarat dan Ketentuan'),
+        ),
       );
       return;
     }
@@ -59,7 +102,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Registrasi berhasil! Silakan login.')),
       );
-      
+
       if (!mounted) return;
       // Langsung arahkan kembali ke halaman Login
       Navigator.pop(context);
@@ -80,21 +123,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.medical_services,
-                    color: AppTheme.primaryColor,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Aura Health',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: AppTheme.primaryColor,
+              Center(
+                child: Column(
+                  children: [
+                    Image.asset(
+                      'assets/images/logo_aura.png',
+                      height: 48,
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 8),
+                    Text(
+                      'Aura Health',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        color: AppTheme.primaryColor,
+                      ),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 32),
               Text(
@@ -182,7 +226,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           TextSpan(text: 'Saya menyetujui '),
                           TextSpan(
                             text: 'Syarat dan Ketentuan',
-                            style: TextStyle(color: AppTheme.primaryColor),
+                            style: TextStyle(),
                           ),
                         ],
                       ),

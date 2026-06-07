@@ -1,14 +1,17 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
-import 'dart:io';
-import '../theme.dart';
-import '../models/post.dart';
-import '../services/community_service.dart';
+import 'package:socket_io_client/socket_io_client.dart' as io;
+import '../../core/theme/app_theme.dart';
+import '../../core/config/api_config.dart';
+import '../../models/post.dart';
+import '../../services/community_service.dart';
 import 'create_post_screen.dart';
-import '../services/user_service.dart';
-import '../models/user.dart';
-import '../widgets/post_skeleton.dart';
-import '../widgets/comment_bottom_sheet.dart';
+import 'post_detail_screen.dart';
+import '../../services/user_service.dart';
+import '../../models/user.dart';
+import '../../widgets/post_skeleton.dart';
+import '../../widgets/comment_bottom_sheet.dart';
 
 class CommunityScreen extends StatefulWidget {
   const CommunityScreen({super.key});
@@ -21,18 +24,63 @@ class _CommunityScreenState extends State<CommunityScreen> {
   List<Post> _posts = [];
   bool _isLoading = true;
   User? _user;
+  io.Socket? _socket;
 
   @override
   void initState() {
     super.initState();
     _loadPosts();
+    _connectRealtime();
+  }
+
+  @override
+  void dispose() {
+    _socket?.dispose();
+    super.dispose();
+  }
+
+  void _connectRealtime() {
+    _socket = io.io(
+      ApiConfig.socketUrl,
+      io.OptionBuilder()
+          .setTransports(['websocket'])
+          .enableReconnection()
+          .disableAutoConnect()
+          .build(),
+    );
+
+    _socket!
+      ..onConnect((_) {})
+      ..on('post_created', (_) => _loadPosts())
+      ..on('post_updated', (data) => _handleRealtimePostUpdated(data))
+      ..on('post_deleted', (data) => _handleRealtimePostDeleted(data))
+      ..on('post_liked', (_) => _loadPosts())
+      ..on('comment_created', (_) => _loadPosts())
+      ..on('comment_deleted', (_) => _loadPosts())
+      ..connect();
+  }
+
+  void _handleRealtimePostUpdated(dynamic data) {
+    if (!mounted || data is! Map || data['post'] == null) return;
+    final updated = Post.fromJson(Map<String, dynamic>.from(data['post']));
+    final index = _posts.indexWhere((post) => post.id == updated.id);
+    if (index == -1) return;
+    setState(() => _posts[index] = updated);
+  }
+
+  void _handleRealtimePostDeleted(dynamic data) {
+    if (!mounted || data is! Map) return;
+    final postId = data['postId']?.toString();
+    if (postId == null) return;
+    setState(() => _posts.removeWhere((post) => post.id == postId));
   }
 
   Future<void> _loadPosts() async {
     final postFuture = CommunityService.getPosts();
-    final userResult = await UserService.getLocalProfile();
+    final userFuture = UserService.getMyProfile();
 
     final postResult = await postFuture;
+    final userResult = await userFuture;
 
     if (!mounted) return;
 
@@ -40,12 +88,14 @@ class _CommunityScreenState extends State<CommunityScreen> {
       if (postResult['success'] == true) {
         _posts = postResult['posts'] as List<Post>;
       }
-      _user = userResult;
+      if (userResult['success'] == true) {
+        _user = userResult['user'] as User;
+      }
       _isLoading = false;
     });
   }
 
-  Future<void> _handleLike(int postId, int index) async {
+  Future<void> _handleLike(String postId, int index) async {
     final originalPost = _posts[index];
     final wasLiked = originalPost.isLiked;
     final currentLikes = originalPost.likesCount;
@@ -59,30 +109,33 @@ class _CommunityScreenState extends State<CommunityScreen> {
     });
 
     final result = await CommunityService.toggleLike(postId);
-    
+
     // Rollback if the API call fails
     if (result['success'] != true) {
       if (!mounted) return;
       setState(() {
         _posts[index] = originalPost;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Gagal menyukai post')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Gagal menyukai post')));
     }
   }
 
-  void _showComments(int postId, int index) {
+  void _showComments(String postId, int index) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: false,
       backgroundColor: Colors.transparent,
-      builder: (context) => FractionallySizedBox(
-        heightFactor: 0.85,
-        child: CommentBottomSheet(
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.85,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        expand: false,
+        builder: (ctx, ctrl) => CommentBottomSheet(
           postId: postId,
           onCommentAdded: () {
-            // Optimistic update for comment count
             setState(() {
               final p = _posts[index];
               _posts[index] = p.copyWith(commentsCount: p.commentsCount + 1);
@@ -91,6 +144,106 @@ class _CommunityScreenState extends State<CommunityScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _editPost(Post post, int index) async {
+    final controller = TextEditingController(text: post.content);
+    final updatedContent = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit Post'),
+        content: TextField(
+          controller: controller,
+          maxLines: 5,
+          decoration: const InputDecoration(
+            hintText: 'Tulis perubahan post',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            child: const Text('Simpan'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+
+    if (updatedContent == null ||
+        updatedContent.isEmpty ||
+        updatedContent == post.content) {
+      return;
+    }
+
+    final originalPost = _posts[index];
+    setState(
+      () => _posts[index] = Post(
+        id: originalPost.id,
+        content: updatedContent,
+        imageUrl: originalPost.imageUrl,
+        authorName: originalPost.authorName,
+        authorAvatar: originalPost.authorAvatar,
+        likesCount: originalPost.likesCount,
+        commentsCount: originalPost.commentsCount,
+        isLiked: originalPost.isLiked,
+        isOwnPost: originalPost.isOwnPost,
+        isAnonymous: originalPost.isAnonymous,
+        createdAt: originalPost.createdAt,
+      ),
+    );
+
+    final result = await CommunityService.updatePost(post.id, content: updatedContent);
+    if (!mounted) return;
+
+    if (result['success'] == true) {
+      setState(() => _posts[index] = result['post'] as Post);
+    } else {
+      setState(() => _posts[index] = originalPost);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result['message'] ?? 'Gagal memperbarui post')),
+      );
+    }
+  }
+
+  Future<void> _confirmDeletePost(Post post) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Hapus Post?'),
+        content: const Text('Apakah Anda yakin ingin menghapus post ini?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Tidak'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Ya, Hapus'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    final originalPosts = List<Post>.from(_posts);
+    setState(() => _posts.removeWhere((item) => item.id == post.id));
+
+    final result = await CommunityService.deletePost(post.id);
+    if (!mounted) return;
+
+    if (result['success'] != true) {
+      setState(() => _posts = originalPosts);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result['message'] ?? 'Gagal menghapus post')),
+      );
+    }
   }
 
   String _formatTime(String? createdAt) {
@@ -112,9 +265,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
     return SafeArea(
       child: Scaffold(
         appBar: AppBar(
-          backgroundColor: Colors.white,
-          elevation: 0,
-          leading: const Icon(Icons.arrow_back, color: AppTheme.primaryColor),
+          automaticallyImplyLeading: false,
           title: const Text(
             'Aura Health',
             style: TextStyle(
@@ -129,8 +280,17 @@ class _CommunityScreenState extends State<CommunityScreen> {
                 backgroundColor: AppTheme.primaryColor,
                 backgroundImage: _user?.avatarUrl != null
                     ? (_user!.avatarUrl!.startsWith('http')
-                        ? NetworkImage(_user!.avatarUrl!) as ImageProvider
-                        : FileImage(File(_user!.avatarUrl!.replaceFirst('file://', ''))) as ImageProvider)
+                          ? CachedNetworkImageProvider(_user!.avatarUrl!)
+                                as ImageProvider
+                          : FileImage(
+                                  File(
+                                    _user!.avatarUrl!.replaceFirst(
+                                      'file://',
+                                      '',
+                                    ),
+                                  ),
+                                )
+                                as ImageProvider)
                     : null,
                 child: _user?.avatarUrl == null
                     ? const Icon(Icons.person, color: Colors.white, size: 20)
@@ -178,7 +338,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                             builder: (context) => const CreatePostScreen(),
                           ),
                         );
-                        
+
                         if (createdPost is Post) {
                           // Optimistic Add Post
                           setState(() {
@@ -211,24 +371,53 @@ class _CommunityScreenState extends State<CommunityScreen> {
                     children: List.generate(3, (index) => const PostSkeleton()),
                   )
                 else if (_posts.isEmpty)
-                  _buildStaticPosts()
+                  const Center(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(vertical: 60),
+                      child: Column(
+                        children: [
+                          Icon(Icons.forum_outlined, size: 64, color: Colors.grey),
+                          SizedBox(height: 16),
+                          Text(
+                            'Belum ada postingan.',
+                            style: TextStyle(color: Colors.grey, fontSize: 16),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'Jadilah yang pertama berbagi!',
+                            style: TextStyle(color: Colors.grey, fontSize: 13),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
                 else
                   ..._posts.asMap().entries.map((entry) {
                     final index = entry.key;
                     final post = entry.value;
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 16),
-                      child: _buildPostCard(
-                        postId: post.id,
-                        index: index,
-                        name: post.authorName,
-                        time: _formatTime(post.createdAt),
-                        content: post.content,
-                        likes: post.likesCount,
-                        comments: post.commentsCount,
-                        isLiked: post.isLiked,
-                        hasImage: post.imageUrl != null,
-                        imageUrl: post.imageUrl,
+                      child: GestureDetector(
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => PostDetailScreen(post: post),
+                          ),
+                        ).then((_) => _loadPosts()),
+                        child: _buildPostCard(
+                          postId: post.id,
+                          index: index,
+                          name: post.authorName,
+                          time: _formatTime(post.createdAt),
+                          content: post.content,
+                          likes: post.likesCount,
+                          comments: post.commentsCount,
+                          isLiked: post.isLiked,
+                          isOwnPost: post.isOwnPost,
+                          isAnonymous: post.isAnonymous,
+                          hasImage: post.imageUrl != null,
+                          imageUrl: post.imageUrl,
+                        ),
                       ),
                     );
                   }),
@@ -241,33 +430,8 @@ class _CommunityScreenState extends State<CommunityScreen> {
     );
   }
 
-  Widget _buildStaticPosts() {
-    return Column(
-      children: [
-        _buildPostCard(
-          name: 'Siti Rahmawati',
-          time: '2 jam yang lalu',
-          content:
-              'Hari ini selesai minum obat bulan ke-3! Semangat teman-teman! Perjalanan masih panjang tapi aku yakin kita semua bisa sembuh.',
-          likes: 24,
-          comments: 5,
-        ),
-        const SizedBox(height: 16),
-        _buildPostCard(
-          name: 'Andi Saputra',
-          time: '5 jam yang lalu',
-          content:
-              'Halo, mau tanya dong. Seminggu terakhir setelah minum obat perut rasanya agak mual. Apakah ada tips dari teman-teman?',
-          likes: 12,
-          comments: 8,
-          tag: 'TANYA DOKTER',
-        ),
-      ],
-    );
-  }
-
   Widget _buildPostCard({
-    int? postId,
+    String? postId,
     int? index,
     required String name,
     required String time,
@@ -275,18 +439,21 @@ class _CommunityScreenState extends State<CommunityScreen> {
     required int likes,
     required int comments,
     bool isLiked = false,
+    bool isOwnPost = false,
+    bool isAnonymous = false,
     String? tag,
     bool hasImage = false,
     String? imageUrl,
   }) {
+    final isAnonymousDisplay = isAnonymous && !isOwnPost;
     return Card(
       margin: EdgeInsets.zero,
-      elevation: 0,
+
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(color: Colors.grey.shade200, width: 1),
       ),
-      shadowColor: Colors.black.withOpacity(0.04),
+      shadowColor: Colors.black.withValues(alpha: 0.04),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -304,12 +471,31 @@ class _CommunityScreenState extends State<CommunityScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        name,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
+                      Row(
+                        children: [
+                          Text(
+                            isAnonymousDisplay ? 'Anonim' : name,
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
+                                ),
+                          ),
+                          if (isOwnPost && isAnonymous) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade200,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Text(
+                                'Anonim',
+                                style: TextStyle(fontSize: 10, color: Colors.grey),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                       const SizedBox(height: 2),
                       Text(
@@ -323,7 +509,10 @@ class _CommunityScreenState extends State<CommunityScreen> {
                 ),
                 if (tag != null)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: AppTheme.primaryLight,
                       borderRadius: BorderRadius.circular(20),
@@ -336,6 +525,18 @@ class _CommunityScreenState extends State<CommunityScreen> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
+                  ),
+                if (postId != null && index != null && isOwnPost)
+                  PopupMenuButton<String>(
+                    onSelected: (value) {
+                      final post = _posts[index];
+                      if (value == 'edit') _editPost(post, index);
+                      if (value == 'delete') _confirmDeletePost(post);
+                    },
+                    itemBuilder: (context) => const [
+                      PopupMenuItem(value: 'edit', child: Text('Edit')),
+                      PopupMenuItem(value: 'delete', child: Text('Delete')),
+                    ],
                   ),
               ],
             ),
@@ -359,20 +560,28 @@ class _CommunityScreenState extends State<CommunityScreen> {
                     ? ClipRRect(
                         borderRadius: BorderRadius.circular(12),
                         child: imageUrl.startsWith('http')
-                            ? Image.network(
-                                imageUrl,
+                            ? CachedNetworkImage(
+                                imageUrl: imageUrl,
                                 width: double.infinity,
                                 fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => const Center(
-                                  child: Icon(Icons.image, size: 48, color: Colors.grey),
+                                errorWidget: (_, _, _) => const Center(
+                                  child: Icon(
+                                    Icons.image,
+                                    size: 48,
+                                    color: Colors.grey,
+                                  ),
                                 ),
                               )
                             : Image.file(
                                 File(imageUrl.replaceFirst('file://', '')),
                                 width: double.infinity,
                                 fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => const Center(
-                                  child: Icon(Icons.image, size: 48, color: Colors.grey),
+                                errorBuilder: (_, _, _) => const Center(
+                                  child: Icon(
+                                    Icons.image,
+                                    size: 48,
+                                    color: Colors.grey,
+                                  ),
                                 ),
                               ),
                       )
@@ -392,7 +601,10 @@ class _CommunityScreenState extends State<CommunityScreen> {
                       : null,
                   borderRadius: BorderRadius.circular(20),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     child: Row(
                       children: [
                         Icon(
@@ -419,7 +631,10 @@ class _CommunityScreenState extends State<CommunityScreen> {
                       : null,
                   borderRadius: BorderRadius.circular(20),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     child: Row(
                       children: [
                         Icon(

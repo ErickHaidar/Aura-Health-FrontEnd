@@ -59,7 +59,7 @@ class EducationService {
   }
 
   // ─── Detail konten edukasi ───
-  static Future<Map<String, dynamic>> getContentDetail(int id) async {
+  static Future<Map<String, dynamic>> getContentDetail(String id) async {
     try {
       final response = await http.get(
         Uri.parse('${ApiConfig.baseUrl}/education/$id'),
@@ -80,4 +80,11 @@ class EducationService {
       return {'success': false, 'message': 'Terjadi kesalahan jaringan: $e'};
     }
   }
+
+  // ─── Cached categories (alias untuk getCategories) ───
+  static Future<Map<String, dynamic>> getCachedCategories() => getCategories();
+
+  // ─── Cached contents per category (alias untuk getContentByCategory) ───
+  static Future<Map<String, dynamic>> getCachedContents(String category) =>
+      getContentByCategory(category);
 }
