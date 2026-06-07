@@ -6,7 +6,7 @@ class ApiConfig {
     // Mengambil URL dari .env, jika tidak ada pakai default
     final envUrl = dotenv.get(
       'API_URL',
-      fallback: 'https://flexible-selected-fish.ngrok-free.app',
+      fallback: 'https://aura-health-backend-mz7r.onrender.com',
     );
     
     if (kIsWeb) return 'http://localhost:3000/api';

@@ -5,7 +5,7 @@ class ApiConfig {
     // Mengambil URL dari .env, jika tidak ada pakai default
     final envUrl = dotenv.get(
       'API_URL',
-      fallback: 'https://flexible-selected-fish.ngrok-free.app',
+      fallback: 'https://aura-health-backend-mz7r.onrender.com',
     );
 
     return '$envUrl/api';
@@ -14,7 +14,7 @@ class ApiConfig {
   static String get socketUrl {
     return dotenv.get(
       'API_URL',
-      fallback: 'https://flexible-selected-fish.ngrok-free.app',
+      fallback: 'https://aura-health-backend-mz7r.onrender.com',
     );
   }
 
